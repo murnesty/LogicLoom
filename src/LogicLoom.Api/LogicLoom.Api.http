@@ -1,0 +1,6 @@
+@LogicLoom.Api_HostAddress = http://localhost:5022
+
+GET {{LogicLoom.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
