@@ -76,6 +76,55 @@ The solution should be **free or very low cost**, while being scalable enough fo
 
 ---
 
+## 🎯 Project 1: WordML Document Analyzer
+### Purpose
+Build a document analysis system that:
+- Parses Word documents using WordML
+- Extracts structural relationships and hierarchies
+- Stores document structure in a database
+- Visualizes document structure in an interactive UI
+
+### Technical Stack
+- **Backend**:
+  - WordML parsing using OpenXML SDK
+  - Document structure analysis engine
+  - PostgreSQL for storing document hierarchies
+  - RESTful API for UI communication
+- **Frontend**:
+  - Blazor WebAssembly for UI
+  - Tree view visualization component
+  - Drag & drop document upload
+  - Interactive node relationship display
+
+### Features
+1. **Document Processing**
+   - Upload Word documents (.docx)
+   - Parse WordML structure
+   - Extract nodes and relationships
+   - Identify document hierarchy
+
+2. **Data Storage**
+   - Node information storage
+   - Edge/relationship mapping
+   - Document metadata
+   - Version tracking
+
+3. **Visualization**
+   - Interactive tree view
+   - Node relationship graphs
+   - Structure navigation
+   - Search and filter capabilities
+
+### Implementation Steps
+1. Setup document upload endpoint
+2. Implement WordML parser
+3. Design database schema for nodes/edges
+4. Create structure analysis engine
+5. Build interactive tree view UI
+6. Add search and filter features
+
+---
+
 ## 📅 Next Steps
 1. Scaffold ASP.NET Core microservices
 2. Setup EF Core with SQLite (local dev)
@@ -87,9 +136,17 @@ The solution should be **free or very low cost**, while being scalable enough fo
 ---
 
 ## 📚 Useful Links
+### General Infrastructure
 - [ASP.NET Core Documentation](https://learn.microsoft.com/aspnet/core)
 - [Entity Framework Core Docs](https://learn.microsoft.com/ef/core)
 - [Blazor WebAssembly Docs](https://learn.microsoft.com/aspnet/core/blazor)
 - [Chart.js](https://www.chartjs.org/)
 - [Render Free Tier](https://render.com/pricing)
 - [Supabase](https://supabase.com/)
+
+### WordML Project Resources
+- [Open XML SDK Documentation](https://learn.microsoft.com/office/open-xml/open-xml-sdk)
+- [Word Processing ML Reference](https://learn.microsoft.com/office/open-xml/word-processing)
+- [Document Object Model](https://learn.microsoft.com/office/client-developer/word/working-with-the-object-model-from-the-dom)
+- [Tree View Component for Blazor](https://docs.radzen.com/blazor/tree)
+- [PostgreSQL Graph Queries](https://www.postgresql.org/docs/current/queries-with.html)
