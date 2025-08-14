@@ -1,4 +1,4 @@
-@using LogicLoom.Client.Models
+@using LogicLoom.Shared.Models
 @using LogicLoom.Client.Components
 
 <div class="node @(Node.Type.ToLower()) @(Node.IsBold ? "fw-bold" : "") @(Node.IsItalic ? "fst-italic" : "")"
@@ -22,12 +22,19 @@
 <style>
     .node {
         margin-bottom: 0.5rem;
+        cursor: default;
+    }
+
+    .node:hover {
+        background-color: var(--vscode-list-hoverBackground);
     }
 
     .node-content {
         display: flex;
         align-items: flex-start;
         gap: 0.5rem;
+        padding: 4px;
+        border-radius: 4px;
     }
 
     .list-marker {
@@ -41,6 +48,17 @@
 
     .listitem {
         /* Add specific styles for list items if needed */
+    }
+
+    /* Make text selectable but prevent accidental selections */
+    .node-content {
+        user-select: text;
+    }
+
+    /* Style for when text is selected */
+    ::selection {
+        background-color: var(--vscode-editor-selectionBackground);
+        color: var(--vscode-editor-selectionForeground);
     }
 </style>
 

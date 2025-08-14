@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace LogicLoom.Client.Models;
+namespace LogicLoom.Shared.Models;
 
 public class DocumentNode
 {
@@ -19,3 +19,25 @@ public class DocumentNode
     public Dictionary<string, string> Properties { get; set; } = new();
     public Guid? ParentId { get; set; }
 }
+
+public class NodeRelationship
+{
+    public Guid Id { get; set; }
+    public Guid SourceNodeId { get; set; }
+    public Guid TargetNodeId { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public Dictionary<string, string> Properties { get; set; } = new();
+}
+
+public record DocumentView(
+    Guid DocumentId,
+    IEnumerable<DocumentNode> Nodes,
+    IEnumerable<NodeRelationship> Relationships);
+
+public record SearchMatch(string Content, int Position, int Level);
+
+public record DocumentSearchResult(
+    Guid DocumentId,
+    string Preview,
+    int MatchCount,
+    IEnumerable<SearchMatch> Matches);

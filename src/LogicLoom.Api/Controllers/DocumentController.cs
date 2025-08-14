@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using LogicLoom.DocumentProcessor.Models;
 using LogicLoom.DocumentProcessor.Services;
 using LogicLoom.Storage;
+using LogicLoom.Shared.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -67,21 +68,37 @@ public class DocumentController : ControllerBase
     }
 
     [HttpGet("{documentId}")]
-    public async Task<IActionResult> GetDocument(Guid documentId)
+    public async Task<IActionResult> GetDocument(Guid documentId, [FromQuery] PaginationParameters pagination)
     {
-        var nodes = await _dbContext.Nodes
+        var query = _dbContext.Nodes
             .Where(n => n.DocumentId == documentId)
-            .OrderBy(n => n.Position)
-            .ToListAsync();
+            .OrderBy(n => n.Position);
 
-        if (!nodes.Any())
+        // Get total count for pagination metadata
+        var totalCount = await query.CountAsync();
+
+        if (totalCount == 0)
         {
             return NotFound();
         }
 
+        // Apply pagination
+        var nodes = await query
+            .Skip((pagination.PageNumber - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
+            .ToListAsync();
+
         var relationships = await _dbContext.Relationships
             .Where(r => nodes.Select(n => n.Id).Contains(r.SourceNodeId))
             .ToListAsync();
+
+        var result = new PaginatedResult<DocumentNode>
+        {
+            Items = nodes,
+            TotalCount = totalCount,
+            PageNumber = pagination.PageNumber,
+            PageSize = pagination.PageSize
+        };
 
         return Ok(new
         {

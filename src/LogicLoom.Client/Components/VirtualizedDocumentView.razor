@@ -1,0 +1,68 @@
+@using LogicLoom.Shared.Models
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.AspNetCore.Components.Web
+@inherits ComponentBase
+
+<style>
+    .virtualized-content {
+        height: 70vh;
+        overflow-y: auto;
+        cursor: default;
+    }
+
+    .node-container {
+        padding: 8px;
+        border-bottom: 1px solid var(--vscode-panel-border);
+    }
+
+    .node-container:hover {
+        background-color: var(--vscode-list-hoverBackground);
+    }
+
+    .node-content {
+        margin-left: calc(var(--level) * 20px);
+    }
+
+    .virtualized-content::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .virtualized-content::-webkit-scrollbar-track {
+        background: var(--vscode-scrollbarSlider-background);
+    }
+
+    .virtualized-content::-webkit-scrollbar-thumb {
+        background: var(--vscode-scrollbarSlider-hoverBackground);
+        border-radius: 5px;
+    }
+
+    .virtualized-content::-webkit-scrollbar-thumb:hover {
+        background: var(--vscode-scrollbarSlider-activeBackground);
+    }
+</style>
+
+<div class="virtualized-content">
+    <Virtualize Items="@Nodes" ItemSize="50" Context="node">
+        <div class="node-container">
+            <div class="node-content" style="--level: @node.Level">
+                @if (node.IsBold)
+                {
+                    <strong>@node.Content</strong>
+                }
+                else if (node.IsItalic)
+                {
+                    <em>@node.Content</em>
+                }
+                else
+                {
+                    @node.Content
+                }
+            </div>
+        </div>
+    </Virtualize>
+</div>
+
+@code {
+    [Parameter]
+    public List<DocumentNode> Nodes { get; set; } = new();
+}

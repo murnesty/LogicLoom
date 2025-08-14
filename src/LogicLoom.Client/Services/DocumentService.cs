@@ -2,7 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
-using LogicLoom.Client.Models;
+using LogicLoom.Shared.Models;
 
 namespace LogicLoom.Client.Services;
 
@@ -84,11 +84,6 @@ public class DocumentService : IDocumentService
 
 public record DocumentProcessingResult(Guid DocumentId);
 
-public record DocumentView(
-    Guid DocumentId,
-    IEnumerable<DocumentNode> Nodes,
-    IEnumerable<NodeRelationship> Relationships);
-
 public record DocumentStructureView(IEnumerable<DocumentNodeView> Nodes);
 
 public record DocumentNodeView(
@@ -102,16 +97,7 @@ public record DocumentNodeView(
     int? ListLevel,
     IEnumerable<DocumentNodeView> Children);
 
-public record DocumentSearchResult(
-    Guid DocumentId,
-    string Preview,
-    int MatchCount,
-    IEnumerable<SearchMatch> Matches);
 
-public record SearchMatch(
-    string Content,
-    int Position,
-    int Level);
 
 public record DocumentTreeView(
     Guid DocumentId,

@@ -1,8 +1,8 @@
 @page "/documents"
 @using LogicLoom.Client.Services
-@using LogicLoom.Client.Models
 @using LogicLoom.Client.Components
 @using Microsoft.AspNetCore.Components.Forms
+@using LogicLoom.Shared.Models
 @implements IDisposable
 
 <style>
@@ -47,6 +47,33 @@
         gap: 1rem;
         align-items: center;
     }
+
+    /* Cursor styles for interactive elements */
+    .btn, input[type="radio"] + label, .form-check-label {
+        cursor: pointer;
+    }
+
+    .btn-link {
+        text-decoration: none;
+    }
+
+    .btn-link:hover {
+        text-decoration: underline;
+    }
+
+    .btn:disabled {
+        cursor: not-allowed;
+    }
+
+    /* File input styling */
+    ::deep .input-file-button {
+        cursor: pointer;
+    }
+
+    /* Search box cursor */
+    .search-box input {
+        cursor: text;
+    }
 </style>
 @inject IDocumentService DocumentService
 @inject NavigationManager NavigationManager
@@ -56,13 +83,18 @@
     <div class="view-controls">
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" name="viewMode" id="standardView" value="standard" 
-                   checked="@(_viewMode == "standard")" @onchange="@(() => _viewMode = "standard")" />
+                   checked="@(_viewMode == "standard")" @onchange="@(() => OnViewModeChanged("standard"))" />
             <label class="form-check-label" for="standardView">Standard View</label>
         </div>
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" name="viewMode" id="treeView" value="tree" 
-                   checked="@(_viewMode == "tree")" @onchange="@(() => _viewMode = "tree")" />
+                   checked="@(_viewMode == "tree")" @onchange="@(() => OnViewModeChanged("tree"))" />
             <label class="form-check-label" for="treeView">Tree View</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="viewMode" id="virtualizedView" value="virtualized" 
+                   checked="@(_viewMode == "virtualized")" @onchange="@(() => OnViewModeChanged("virtualized"))" />
+            <label class="form-check-label" for="virtualizedView">Performance View</label>
         </div>
     </div>
 </div>
@@ -100,7 +132,7 @@
         {
             <div class="search-result">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="@($"/documents?id={result.DocumentId}")">View Document</a>
+                    <button class="btn btn-link p-0" @onclick="() => ViewDocument(result.DocumentId)">View Document</button>
                     <span class="match-count">@result.MatchCount matches</span>
                 </div>
                 <div class="match-preview">
@@ -136,6 +168,10 @@
                         {
                             <TreeNode Node="@node" Level="0" />
                         }
+                    }
+                    else if (_viewMode == "virtualized")
+                    {
+                        <VirtualizedDocumentView Nodes="@(_document.Nodes.OrderBy(n => n.Position).ToList())" />
                     }
                     else
                     {
@@ -211,10 +247,22 @@
         {
             _currentDocumentId = documentId;
             _document = await DocumentService.GetDocumentAsync(documentId);
-            if (_viewMode == "tree")
+            
+            // Handle view mode loading
+            switch (_viewMode)
             {
-                await LoadTreeView(documentId);
+                case "tree":
+                    await LoadTreeView(documentId);
+                    break;
+                case "virtualized":
+                    // Ensure document nodes are loaded for virtualization
+                    if (_document.Nodes == null || !_document.Nodes.Any())
+                    {
+                        _document = await DocumentService.GetDocumentAsync(documentId);
+                    }
+                    break;
             }
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -282,6 +330,38 @@
         catch (Exception ex)
         {
             _uploadError = $"Error deleting document: {ex.Message}";
+        }
+    }
+
+    private async Task ViewDocument(Guid documentId)
+    {
+        try
+        {
+            _uploadError = null;
+            await LoadDocument(documentId);
+            NavigationManager.NavigateTo($"/documents?id={documentId}", replace: true);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _uploadError = $"Error loading document: {ex.Message}";
+        }
+    }
+
+    private async Task OnViewModeChanged(string newMode)
+    {
+        _viewMode = newMode;
+        if (_currentDocumentId.HasValue)
+        {
+            if (newMode == "tree")
+            {
+                await LoadTreeView(_currentDocumentId.Value);
+            }
+            else
+            {
+                await LoadDocument(_currentDocumentId.Value);
+            }
+            StateHasChanged();
         }
     }
 

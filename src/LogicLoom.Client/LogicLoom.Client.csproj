@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LogicLoom.Shared\LogicLoom.Shared.csproj" />
+    <ProjectReference Include="..\LogicLoom.Shared.Models\LogicLoom.Shared.Models.csproj" />
   </ItemGroup>
 
 </Project>
