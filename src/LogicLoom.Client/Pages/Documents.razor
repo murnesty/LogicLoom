@@ -1,167 +1,83 @@
 @page "/documents"
 @using LogicLoom.Client.Services
-@using LogicLoom.Client.Components
-@using Microsoft.AspNetCore.Components.Forms
-@using LogicLoom.Shared.Models
+@using Microsoft.AspNetCore.Components.Web
 @implements IDisposable
-
-<style>
-    .view-selector {
-        margin-bottom: 1rem;
-    }
-
-    .search-box {
-        margin-bottom: 1rem;
-    }
-
-    .search-results {
-        margin-top: 1rem;
-    }
-
-    .search-result {
-        margin-bottom: 1rem;
-        padding: 1rem;
-        border: 1px solid var(--vscode-panel-border);
-        border-radius: 4px;
-    }
-
-    .match-count {
-        color: var(--vscode-symbolIcon-numberForeground);
-        font-size: 0.9em;
-    }
-
-    .match-preview {
-        margin-top: 0.5rem;
-        font-family: var(--vscode-editor-font-family);
-    }
-
-    .toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-
-    .view-controls {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    }
-
-    /* Cursor styles for interactive elements */
-    .btn, input[type="radio"] + label, .form-check-label {
-        cursor: pointer;
-    }
-
-    .btn-link {
-        text-decoration: none;
-    }
-
-    .btn-link:hover {
-        text-decoration: underline;
-    }
-
-    .btn:disabled {
-        cursor: not-allowed;
-    }
-
-    /* File input styling */
-    ::deep .input-file-button {
-        cursor: pointer;
-    }
-
-    /* Search box cursor */
-    .search-box input {
-        cursor: text;
-    }
-</style>
+@inject IDocumentCache DocumentCache
 @inject IDocumentService DocumentService
 @inject NavigationManager NavigationManager
 
-<div class="toolbar">
-    <h3>Document Management</h3>
-    <div class="view-controls">
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="viewMode" id="standardView" value="standard" 
-                   checked="@(_viewMode == "standard")" @onchange="@(() => OnViewModeChanged("standard"))" />
-            <label class="form-check-label" for="standardView">Standard View</label>
-        </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="viewMode" id="treeView" value="tree" 
-                   checked="@(_viewMode == "tree")" @onchange="@(() => OnViewModeChanged("tree"))" />
-            <label class="form-check-label" for="treeView">Tree View</label>
-        </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="viewMode" id="virtualizedView" value="virtualized" 
-                   checked="@(_viewMode == "virtualized")" @onchange="@(() => OnViewModeChanged("virtualized"))" />
-            <label class="form-check-label" for="virtualizedView">Performance View</label>
-        </div>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col">
-        <div class="search-box">
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="Search documents..." 
-                       @bind="_searchQuery" @bind:event="oninput" @onkeyup="HandleSearch" />
-                <button class="btn btn-outline-secondary" type="button" @onclick="PerformSearch">
-                    Search
-                </button>
-            </div>
-        </div>
-
-        <InputFile OnChange="@HandleFileSelected" accept=".docx" />
-        @if (_isUploading)
-        {
-            <div class="mt-2">
-                <div class="spinner-border spinner-border-sm" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <span class="ms-2">Uploading document...</span>
-            </div>
-        }
-    </div>
-</div>
-
-@if (_searchResults != null && _searchResults.Any())
-{
-    <div class="search-results">
-        <h4>Search Results</h4>
-        @foreach (var result in _searchResults)
-        {
-            <div class="search-result">
-                <div class="d-flex justify-content-between align-items-center">
-                    <button class="btn btn-link p-0" @onclick="() => ViewDocument(result.DocumentId)">View Document</button>
-                    <span class="match-count">@result.MatchCount matches</span>
-                </div>
-                <div class="match-preview">
-                    @result.Preview
+<div class="documents-page">
+    <LoadingOverlay IsLoading="@_isLoading" Message="@_loadingMessage" />
+    
+    <div class="documents-sidebar">
+        <div class="sidebar-header">
+            <h3>Documents</h3>
+            <div class="upload-zone @(_isDragging ? "dragging" : "")" 
+                 @ondragenter="HandleDragEnter"
+                 @ondragleave="HandleDragLeave"
+                 @ondragover:preventDefault
+                 @ondrop="HandleDrop">
+                <InputFile OnChange="@HandleFileSelected" accept=".docx" class="file-upload" />
+                <div class="upload-message">
+                    <i class="bi bi-cloud-upload"></i>
+                    <span>Drop files here or click to upload</span>
                 </div>
             </div>
-        }
+        </div>
+        <div class="sidebar-filters">
+            <AdvancedSearch OnFiltersChanged="HandleFiltersChanged" />
+        </div>
+        <DocumentNavigator 
+            SelectedDocumentId="@_currentDocumentId"
+            OnDocumentSelectedChanged="ViewDocument" />
+        <!-- End sidebar -->
     </div>
-}
-
-@if (_uploadError is not null)
-{
-    <div class="alert alert-danger">
-        @_uploadError
-    </div>
-}
-
-@if (_document is not null)
-{
-    <div class="row">
-        <div class="col">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Document Structure</span>
-                    <button class="btn btn-danger btn-sm" @onclick="DeleteDocument">
-                        Delete Document
+    <div class="documents-content">
+        <DocumentContentSearch 
+            DocumentId="@_currentDocumentId"
+            OnSearchResultSelected="HandleSearchResultSelected" />
+            
+        <div class="document-viewer">
+            <div class="view-controls">
+                <div class="view-mode-selector">
+                    <button class="btn @(_viewMode == "tree" ? "btn-primary" : "btn-outline-secondary")"
+                            @onclick="@(() => OnViewModeChanged("tree"))">
+                        <i class="bi bi-diagram-3"></i> Tree View
+                    </button>
+                    <button class="btn @(_viewMode == "virtualized" ? "btn-primary" : "btn-outline-secondary")"
+                            @onclick="@(() => OnViewModeChanged("virtualized"))">
+                        <i class="bi bi-graph-up"></i> Performance View
                     </button>
                 </div>
-                <div class="card-body">
+
+                @if (_currentDocumentId.HasValue)
+                {
+                    <button class="btn btn-danger" @onclick="DeleteDocument">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                }
+            </div>
+
+            @if (_isUploading)
+            {
+                <div class="upload-progress">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Uploading...</span>
+                    </div>
+                    <span>Uploading document...</span>
+                </div>
+            }
+            
+            @if (_uploadError is not null)
+            {
+                <div class="alert alert-danger">
+                    @_uploadError
+                </div>
+            }
+
+            @if (_currentDocumentId != null)
+            {
+                <div class="document-content">
                     @if (_viewMode == "tree" && _treeView != null)
                     {
                         @foreach (var node in _treeView.Nodes)
@@ -171,35 +87,171 @@
                     }
                     else if (_viewMode == "virtualized")
                     {
-                        <VirtualizedDocumentView Nodes="@(_document.Nodes.OrderBy(n => n.Position).ToList())" />
-                    }
-                    else
-                    {
-                        @foreach (var node in _document.Nodes.Where(n => n.ParentId == null).OrderBy(n => n.Position))
-                        {
-                            <RenderDocumentNode Node="@node" AllNodes="_document.Nodes.ToList()" />
-                        }
+                        <VirtualizedDocumentView DocumentId="@_currentDocumentId" />
                     }
                 </div>
-            </div>
+            }
+            else
+            {
+                <div class="no-document-selected">
+                    <div class="message">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <p>Select a document to view its contents</p>
+                    </div>
+                </div>
+            }
         </div>
     </div>
-}
+</div>
+
+<style>
+    .documents-page {
+        display: flex;
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+    }
+
+    .documents-sidebar {
+        width: 300px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--vscode-panel-border);
+        background: var(--vscode-sideBar-background);
+    }
+
+    .sidebar-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--vscode-panel-border);
+    }
+
+    .sidebar-header h3 {
+        margin: 0 0 1rem 0;
+    }
+
+    .documents-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .document-viewer {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .view-controls {
+        padding: 8px;
+        border-bottom: 1px solid var(--vscode-panel-border);
+        background: var(--vscode-editor-background);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .view-mode-selector {
+        display: flex;
+        gap: 8px;
+    }
+
+    .document-content {
+        flex: 1;
+        overflow: auto;
+        padding: 1rem;
+    }
+
+    .no-document-selected {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .no-document-selected .message {
+        text-align: center;
+        color: var(--vscode-descriptionForeground);
+    }
+
+    .no-document-selected .message i {
+        font-size: 2em;
+        margin-bottom: 8px;
+    }
+
+    .upload-progress {
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--vscode-editor-background);
+        border-bottom: 1px solid var(--vscode-panel-border);
+    }
+
+    .file-upload {
+        margin-top: 0.5rem;
+    }
+
+    .file-upload ::deep input {
+        cursor: pointer;
+    }
+
+    /* Cursor styles for interactive elements */
+    .btn, input[type="radio"] + label {
+        cursor: pointer;
+    }
+
+    .btn:disabled {
+        cursor: not-allowed;
+    }
+
+    .sidebar-filters {
+        padding: 1rem;
+        border-bottom: 1px solid var(--vscode-panel-border);
+    }
+
+    .upload-zone {
+        border: 2px dashed var(--vscode-panel-border);
+        border-radius: 4px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .upload-zone.dragging {
+        border-color: var(--vscode-button-background);
+        background: var(--vscode-button-hoverBackground);
+    }
+
+    .upload-message {
+        margin-top: 0.5rem;
+        color: var(--vscode-descriptionForeground);
+        font-size: 0.9em;
+    }
+
+    .upload-message i {
+        font-size: 1.5em;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+</style>
 
 @code {
+    private bool _isLoading;
     private bool _isUploading;
+    private bool _isDragging;
     private string? _uploadError;
+    private string _loadingMessage = "";
     private DocumentView? _document;
     private DocumentTreeView? _treeView;
     private Guid? _currentDocumentId;
-    private string _viewMode = "standard";
-    private string _searchQuery = "";
-    private IEnumerable<DocumentSearchResult>? _searchResults;
-    private System.Threading.Timer? _searchTimer;
+    private string _viewMode = "tree";
 
     protected override async Task OnInitializedAsync()
     {
-        // Load document ID from query string if available
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         if (Guid.TryParse(System.Web.HttpUtility.ParseQueryString(uri.Query).Get("id"), out var documentId))
         {
@@ -208,6 +260,38 @@
             {
                 await LoadTreeView(documentId);
             }
+        }
+    }
+
+    private void HandleDragEnter()
+    {
+        _isDragging = true;
+    }
+
+    private void HandleDragLeave()
+    {
+        _isDragging = false;
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        _isDragging = false;
+        // To be implemented after API endpoints are ready
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleFiltersChanged(object filters)
+    {
+        _isLoading = true;
+        _loadingMessage = "Applying filters...";
+        try
+        {
+            // To be implemented after API endpoints are ready
+            await Task.CompletedTask;
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
@@ -228,7 +312,6 @@
             var result = await DocumentService.UploadDocumentAsync(content);
             await LoadDocument(result.DocumentId);
 
-            // Update URL with document ID
             NavigationManager.NavigateTo($"/documents?id={result.DocumentId}", replace: true);
         }
         catch (Exception ex)
@@ -243,30 +326,36 @@
 
     private async Task LoadDocument(Guid documentId)
     {
+        _isLoading = true;
+        _loadingMessage = "Loading document...";
         try
         {
-            _currentDocumentId = documentId;
-            _document = await DocumentService.GetDocumentAsync(documentId);
-            
-            // Handle view mode loading
-            switch (_viewMode)
+            // Try to get from cache first
+            var cachedDoc = await DocumentCache.GetAsync<DocumentView>($"doc_{documentId}");
+            if (cachedDoc != null)
             {
-                case "tree":
-                    await LoadTreeView(documentId);
-                    break;
-                case "virtualized":
-                    // Ensure document nodes are loaded for virtualization
-                    if (_document.Nodes == null || !_document.Nodes.Any())
-                    {
-                        _document = await DocumentService.GetDocumentAsync(documentId);
-                    }
-                    break;
+                _document = cachedDoc;
+                _currentDocumentId = documentId;
             }
-            StateHasChanged();
+            else
+            {
+                _currentDocumentId = documentId;
+                _document = await DocumentService.GetDocumentAsync(documentId);
+                await DocumentCache.SetAsync($"doc_{documentId}", _document, TimeSpan.FromMinutes(5));
+            }
+            
+            if (_viewMode == "tree")
+            {
+                await LoadTreeView(documentId);
+            }
         }
         catch (Exception ex)
         {
             _uploadError = $"Error loading document: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
@@ -274,7 +363,16 @@
     {
         try
         {
-            _treeView = await DocumentService.GetDocumentTreeAsync(documentId);
+            var cachedTree = await DocumentCache.GetAsync<DocumentTreeView>($"tree_{documentId}");
+            if (cachedTree != null)
+            {
+                _treeView = cachedTree;
+            }
+            else
+            {
+                _treeView = await DocumentService.GetDocumentTreeAsync(documentId);
+                await DocumentCache.SetAsync($"tree_{documentId}", _treeView, TimeSpan.FromMinutes(5));
+            }
         }
         catch (Exception ex)
         {
@@ -282,46 +380,17 @@
         }
     }
 
-    private async Task HandleSearch()
-    {
-        if (_searchTimer != null)
-        {
-            await _searchTimer.DisposeAsync();
-        }
-
-        _searchTimer = new System.Threading.Timer(async _ =>
-        {
-            await PerformSearch();
-            _searchTimer = null;
-        }, null, 500, System.Threading.Timeout.Infinite);
-    }
-
-    private async Task PerformSearch()
-    {
-        if (string.IsNullOrWhiteSpace(_searchQuery))
-        {
-            _searchResults = null;
-            return;
-        }
-
-        try
-        {
-            _searchResults = await DocumentService.SearchDocumentsAsync(_searchQuery);
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            _uploadError = $"Error searching documents: {ex.Message}";
-        }
-    }
-
     private async Task DeleteDocument()
     {
         if (!_currentDocumentId.HasValue) return;
 
+        _isLoading = true;
+        _loadingMessage = "Deleting document...";
         try
         {
             await DocumentService.DeleteDocumentAsync(_currentDocumentId.Value);
+            await DocumentCache.RemoveAsync($"doc_{_currentDocumentId.Value}");
+            await DocumentCache.RemoveAsync($"tree_{_currentDocumentId.Value}");
             NavigationManager.NavigateTo("/documents", replace: true);
             _document = null;
             _treeView = null;
@@ -330,6 +399,10 @@
         catch (Exception ex)
         {
             _uploadError = $"Error deleting document: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
@@ -340,7 +413,6 @@
             _uploadError = null;
             await LoadDocument(documentId);
             NavigationManager.NavigateTo($"/documents?id={documentId}", replace: true);
-            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -361,15 +433,17 @@
             {
                 await LoadDocument(_currentDocumentId.Value);
             }
-            StateHasChanged();
         }
+    }
+
+    private async Task HandleSearchResultSelected(object result)
+    {
+        // TODO: Implement jumping to search result in document view
+        await Task.CompletedTask;
     }
 
     public void Dispose()
     {
-        if (_searchTimer != null)
-        {
-            _searchTimer.Dispose();
-        }
+        // Cleanup if needed
     }
 }

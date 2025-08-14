@@ -1,0 +1,227 @@
+@using LogicLoom.Shared.Models
+
+<div class="advanced-search">
+    <div class="search-header" @onclick="ToggleExpanded">
+        <span>Advanced Search</span>
+        <i class="bi @(_isExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+    </div>
+
+    @if (_isExpanded)
+    {
+        <div class="search-filters">
+            <div class="form-group">
+                <label>Date Range</label>
+                <div class="date-range">
+                    <input type="date" class="form-control" @bind="_dateFrom" />
+                    <span>to</span>
+                    <input type="date" class="form-control" @bind="_dateTo" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Categories</label>
+                <select class="form-select" @bind="_selectedCategory">
+                    <option value="">All Categories</option>
+                    @foreach (var category in _categories)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Tags</label>
+                <div class="tags-container">
+                    @foreach (var tag in _selectedTags)
+                    {
+                        <span class="tag">
+                            @tag
+                            <button @onclick="@(() => RemoveTag(tag))" class="remove-tag">×</button>
+                        </span>
+                    }
+                    <div class="tag-input">
+                        <input type="text" 
+                               placeholder="Add tag..."
+                               @bind="_tagInput"
+                               @bind:event="oninput"
+                               @onkeydown="@HandleTagInputKeyDown" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" @onclick="ApplyFilters">Apply Filters</button>
+                <button class="btn btn-secondary" @onclick="ResetFilters">Reset</button>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .advanced-search {
+        background: var(--vscode-editor-background);
+        border: 1px solid var(--vscode-panel-border);
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+
+    .search-header {
+        padding: 8px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .search-header:hover {
+        background: var(--vscode-list-hoverBackground);
+    }
+
+    .search-filters {
+        padding: 12px;
+        border-top: 1px solid var(--vscode-panel-border);
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--vscode-foreground);
+    }
+
+    .date-range {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 4px;
+        border: 1px solid var(--vscode-input-border);
+        border-radius: 4px;
+        min-height: 36px;
+    }
+
+    .tag {
+        background: var(--vscode-badge-background);
+        color: var(--vscode-badge-foreground);
+        padding: 2px 8px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .remove-tag {
+        background: none;
+        border: none;
+        color: inherit;
+        padding: 0;
+        cursor: pointer;
+        font-size: 1.2em;
+        line-height: 1;
+    }
+
+    .remove-tag:hover {
+        opacity: 0.8;
+    }
+
+    .tag-input {
+        flex: 1;
+        min-width: 100px;
+    }
+
+    .tag-input input {
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--vscode-input-foreground);
+        width: 100%;
+    }
+
+    .actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 1rem;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public EventCallback<SearchFilters> OnFiltersChanged { get; set; }
+
+    private bool _isExpanded;
+    private DateTime? _dateFrom;
+    private DateTime? _dateTo;
+    private string _selectedCategory = "";
+    private HashSet<string> _selectedTags = new();
+    private string _tagInput = "";
+
+    // TODO: These should come from the API
+    private readonly List<string> _categories = new()
+    {
+        "Technical Documentation",
+        "Legal Documents",
+        "Research Papers",
+        "Reports",
+        "Specifications"
+    };
+
+    private void ToggleExpanded()
+    {
+        _isExpanded = !_isExpanded;
+    }
+
+    private void RemoveTag(string tag)
+    {
+        _selectedTags.Remove(tag);
+    }
+
+    private async Task HandleTagInputKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_tagInput))
+        {
+            _selectedTags.Add(_tagInput.Trim());
+            _tagInput = "";
+            await Task.CompletedTask;
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        var filters = new SearchFilters
+        {
+            DateFrom = _dateFrom,
+            DateTo = _dateTo,
+            Category = _selectedCategory,
+            Tags = _selectedTags.ToList()
+        };
+
+        await OnFiltersChanged.InvokeAsync(filters);
+    }
+
+    private async Task ResetFilters()
+    {
+        _dateFrom = null;
+        _dateTo = null;
+        _selectedCategory = "";
+        _selectedTags.Clear();
+        await ApplyFilters();
+    }
+
+    public class SearchFilters
+    {
+        public DateTime? DateFrom { get; set; }
+        public DateTime? DateTo { get; set; }
+        public string Category { get; set; } = "";
+        public List<string> Tags { get; set; } = new();
+    }
+}

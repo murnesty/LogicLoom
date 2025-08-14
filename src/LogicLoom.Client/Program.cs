@@ -16,5 +16,6 @@ builder.Services.AddHttpClient("IdentityAPI", client => client.BaseAddress = new
 
 // Register services
 builder.Services.AddScoped<IDocumentService, DocumentService>();
+builder.Services.AddScoped<IDocumentCache, DocumentCache>();
 
 await builder.Build().RunAsync();
