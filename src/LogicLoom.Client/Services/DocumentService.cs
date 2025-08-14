@@ -13,6 +13,7 @@ public interface IDocumentService
     Task<DocumentStructureView> GetDocumentStructureAsync(Guid documentId);
     Task DeleteDocumentAsync(Guid documentId);
     Task<IEnumerable<DocumentSearchResult>> SearchDocumentsAsync(string query);
+    Task<IEnumerable<DocumentSearchResult>> ListDocumentsAsync(int pageNumber = 1, int pageSize = 10);
     Task<DocumentTreeView> GetDocumentTreeAsync(Guid documentId);
 }
 
@@ -55,6 +56,12 @@ public class DocumentService : IDocumentService
     {
         return await _httpClient.GetFromJsonAsync<IEnumerable<DocumentSearchResult>>($"api/document/search?query={Uri.EscapeDataString(query)}")
             ?? throw new Exception("Failed to search documents");
+    }
+
+    public async Task<IEnumerable<DocumentSearchResult>> ListDocumentsAsync(int pageNumber = 1, int pageSize = 10)
+    {
+        return await _httpClient.GetFromJsonAsync<IEnumerable<DocumentSearchResult>>($"api/document/list?pageNumber={pageNumber}&pageSize={pageSize}")
+            ?? throw new Exception("Failed to list documents");
     }
 
     public async Task<DocumentTreeView> GetDocumentTreeAsync(Guid documentId)

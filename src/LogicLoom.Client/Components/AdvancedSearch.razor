@@ -40,11 +40,8 @@
                         </span>
                     }
                     <div class="tag-input">
-                        <input type="text" 
-                               placeholder="Add tag..."
-                               @bind="_tagInput"
-                               @bind:event="oninput"
-                               @onkeydown="@HandleTagInputKeyDown" />
+                        <input type="text" placeholder="Add tag..." @bind="_tagInput" @bind:event="oninput"
+                            @onkeydown="@HandleTagInputKeyDown" />
                     </div>
                 </div>
             </div>
@@ -167,13 +164,13 @@
 
     // TODO: These should come from the API
     private readonly List<string> _categories = new()
-    {
-        "Technical Documentation",
-        "Legal Documents",
-        "Research Papers",
-        "Reports",
-        "Specifications"
-    };
+{
+"Technical Documentation",
+"Legal Documents",
+"Research Papers",
+"Reports",
+"Specifications"
+};
 
     private void ToggleExpanded()
     {

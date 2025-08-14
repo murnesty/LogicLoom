@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LogicLoom.Shared\LogicLoom.Shared.csproj" />
+    <ProjectReference Include="..\LogicLoom.Shared.Models\LogicLoom.Shared.Models.csproj" />
     <ProjectReference Include="..\LogicLoom.DocumentProcessor\LogicLoom.DocumentProcessor.csproj" />
     <ProjectReference Include="..\LogicLoom.Storage\LogicLoom.Storage.csproj" />
   </ItemGroup>

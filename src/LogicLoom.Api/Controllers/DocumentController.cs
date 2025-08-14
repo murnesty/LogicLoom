@@ -92,7 +92,7 @@ public class DocumentController : ControllerBase
             .Where(r => nodes.Select(n => n.Id).Contains(r.SourceNodeId))
             .ToListAsync();
 
-        var result = new PaginatedResult<DocumentNode>
+        var result = new PaginatedResult<LogicLoom.DocumentProcessor.Models.DocumentNode>
         {
             Items = nodes,
             TotalCount = totalCount,
@@ -111,6 +111,11 @@ public class DocumentController : ControllerBase
     [HttpGet("search")]
     public async Task<IActionResult> SearchDocuments([FromQuery] string query)
     {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return BadRequest("Query parameter is required");
+        }
+
         var nodes = await _dbContext.Nodes
             .Where(n => EF.Functions.ILike(n.Content, $"%{query}%"))
             .OrderBy(n => n.Position)
@@ -125,15 +130,52 @@ public class DocumentController : ControllerBase
 
         var results = documents
             .GroupBy(n => n.DocumentId)
+            .Select(g => new LogicLoom.Shared.Models.DocumentSearchResult(
+                g.Key,
+                string.Join(" ", g.Take(3).Select(n => n.Content)),
+                nodes.Count(n => n.DocumentId == g.Key),
+                nodes
+                    .Where(n => n.DocumentId == g.Key)
+                    .Select(n => new LogicLoom.Shared.Models.SearchMatch(n.Content, n.Position, n.Level))
+            ));
+
+        return Ok(results);
+    }
+
+    [HttpGet("list")]
+    public async Task<IActionResult> ListDocuments([FromQuery] PaginationParameters pagination)
+    {
+        // Get distinct documents by DocumentId
+        var documentIds = await _dbContext.Nodes
+            .Select(n => n.DocumentId)
+            .Distinct()
+            .Skip((pagination.PageNumber - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
+            .ToListAsync();
+
+        if (!documentIds.Any())
+        {
+            return Ok(new List<LogicLoom.Shared.Models.DocumentSearchResult>());
+        }
+
+        // Get the first few nodes for each document to create previews
+        var previewNodes = await _dbContext.Nodes
+            .Where(n => documentIds.Contains(n.DocumentId))
+            .GroupBy(n => n.DocumentId)
             .Select(g => new
             {
                 DocumentId = g.Key,
-                Preview = string.Join(" ", g.Take(3).Select(n => n.Content)),
-                MatchCount = nodes.Count(n => n.DocumentId == g.Key),
-                Matches = nodes
-                    .Where(n => n.DocumentId == g.Key)
-                    .Select(n => new { n.Content, n.Position, n.Level })
-            });
+                Preview = string.Join(" ", g.OrderBy(n => n.Position).Take(3).Select(n => n.Content)),
+                TotalNodes = g.Count()
+            })
+            .ToListAsync();
+
+        var results = previewNodes.Select(doc => new LogicLoom.Shared.Models.DocumentSearchResult(
+            doc.DocumentId,
+            doc.Preview,
+            doc.TotalNodes,
+            new List<LogicLoom.Shared.Models.SearchMatch>()
+        ));
 
         return Ok(results);
     }
@@ -194,9 +236,9 @@ public class DocumentController : ControllerBase
     }
 
     private IEnumerable<object> BuildDocumentStructure(
-        List<DocumentNode> nodes,
-        List<DocumentNode> allNodes,
-        List<NodeRelationship> relationships)
+        List<LogicLoom.DocumentProcessor.Models.DocumentNode> nodes,
+        List<LogicLoom.DocumentProcessor.Models.DocumentNode> allNodes,
+        List<LogicLoom.DocumentProcessor.Models.NodeRelationship> relationships)
     {
         var result = new List<object>();
 
