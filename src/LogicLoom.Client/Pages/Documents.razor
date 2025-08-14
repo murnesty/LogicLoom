@@ -1,0 +1,295 @@
+@page "/documents"
+@using LogicLoom.Client.Services
+@using LogicLoom.Client.Models
+@using LogicLoom.Client.Components
+@using Microsoft.AspNetCore.Components.Forms
+@implements IDisposable
+
+<style>
+    .view-selector {
+        margin-bottom: 1rem;
+    }
+
+    .search-box {
+        margin-bottom: 1rem;
+    }
+
+    .search-results {
+        margin-top: 1rem;
+    }
+
+    .search-result {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--vscode-panel-border);
+        border-radius: 4px;
+    }
+
+    .match-count {
+        color: var(--vscode-symbolIcon-numberForeground);
+        font-size: 0.9em;
+    }
+
+    .match-preview {
+        margin-top: 0.5rem;
+        font-family: var(--vscode-editor-font-family);
+    }
+
+    .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .view-controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+</style>
+@inject IDocumentService DocumentService
+@inject NavigationManager NavigationManager
+
+<div class="toolbar">
+    <h3>Document Management</h3>
+    <div class="view-controls">
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="viewMode" id="standardView" value="standard" 
+                   checked="@(_viewMode == "standard")" @onchange="@(() => _viewMode = "standard")" />
+            <label class="form-check-label" for="standardView">Standard View</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="viewMode" id="treeView" value="tree" 
+                   checked="@(_viewMode == "tree")" @onchange="@(() => _viewMode = "tree")" />
+            <label class="form-check-label" for="treeView">Tree View</label>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="search-box">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Search documents..." 
+                       @bind="_searchQuery" @bind:event="oninput" @onkeyup="HandleSearch" />
+                <button class="btn btn-outline-secondary" type="button" @onclick="PerformSearch">
+                    Search
+                </button>
+            </div>
+        </div>
+
+        <InputFile OnChange="@HandleFileSelected" accept=".docx" />
+        @if (_isUploading)
+        {
+            <div class="mt-2">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span class="ms-2">Uploading document...</span>
+            </div>
+        }
+    </div>
+</div>
+
+@if (_searchResults != null && _searchResults.Any())
+{
+    <div class="search-results">
+        <h4>Search Results</h4>
+        @foreach (var result in _searchResults)
+        {
+            <div class="search-result">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="@($"/documents?id={result.DocumentId}")">View Document</a>
+                    <span class="match-count">@result.MatchCount matches</span>
+                </div>
+                <div class="match-preview">
+                    @result.Preview
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (_uploadError is not null)
+{
+    <div class="alert alert-danger">
+        @_uploadError
+    </div>
+}
+
+@if (_document is not null)
+{
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Document Structure</span>
+                    <button class="btn btn-danger btn-sm" @onclick="DeleteDocument">
+                        Delete Document
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (_viewMode == "tree" && _treeView != null)
+                    {
+                        @foreach (var node in _treeView.Nodes)
+                        {
+                            <TreeNode Node="@node" Level="0" />
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var node in _document.Nodes.Where(n => n.ParentId == null).OrderBy(n => n.Position))
+                        {
+                            <RenderDocumentNode Node="@node" AllNodes="_document.Nodes.ToList()" />
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _isUploading;
+    private string? _uploadError;
+    private DocumentView? _document;
+    private DocumentTreeView? _treeView;
+    private Guid? _currentDocumentId;
+    private string _viewMode = "standard";
+    private string _searchQuery = "";
+    private IEnumerable<DocumentSearchResult>? _searchResults;
+    private System.Threading.Timer? _searchTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load document ID from query string if available
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (Guid.TryParse(System.Web.HttpUtility.ParseQueryString(uri.Query).Get("id"), out var documentId))
+        {
+            await LoadDocument(documentId);
+            if (_viewMode == "tree")
+            {
+                await LoadTreeView(documentId);
+            }
+        }
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            _isUploading = true;
+            _uploadError = null;
+            StateHasChanged();
+
+            var file = e.File;
+            using var content = new MultipartFormDataContent();
+            using var stream = file.OpenReadStream(maxAllowedSize: 10485760); // 10 MB max
+            using var streamContent = new StreamContent(stream);
+            content.Add(streamContent, "file", file.Name);
+
+            var result = await DocumentService.UploadDocumentAsync(content);
+            await LoadDocument(result.DocumentId);
+
+            // Update URL with document ID
+            NavigationManager.NavigateTo($"/documents?id={result.DocumentId}", replace: true);
+        }
+        catch (Exception ex)
+        {
+            _uploadError = $"Error uploading document: {ex.Message}";
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+
+    private async Task LoadDocument(Guid documentId)
+    {
+        try
+        {
+            _currentDocumentId = documentId;
+            _document = await DocumentService.GetDocumentAsync(documentId);
+            if (_viewMode == "tree")
+            {
+                await LoadTreeView(documentId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _uploadError = $"Error loading document: {ex.Message}";
+        }
+    }
+
+    private async Task LoadTreeView(Guid documentId)
+    {
+        try
+        {
+            _treeView = await DocumentService.GetDocumentTreeAsync(documentId);
+        }
+        catch (Exception ex)
+        {
+            _uploadError = $"Error loading tree view: {ex.Message}";
+        }
+    }
+
+    private async Task HandleSearch()
+    {
+        if (_searchTimer != null)
+        {
+            await _searchTimer.DisposeAsync();
+        }
+
+        _searchTimer = new System.Threading.Timer(async _ =>
+        {
+            await PerformSearch();
+            _searchTimer = null;
+        }, null, 500, System.Threading.Timeout.Infinite);
+    }
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            _searchResults = null;
+            return;
+        }
+
+        try
+        {
+            _searchResults = await DocumentService.SearchDocumentsAsync(_searchQuery);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _uploadError = $"Error searching documents: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteDocument()
+    {
+        if (!_currentDocumentId.HasValue) return;
+
+        try
+        {
+            await DocumentService.DeleteDocumentAsync(_currentDocumentId.Value);
+            NavigationManager.NavigateTo("/documents", replace: true);
+            _document = null;
+            _treeView = null;
+            _currentDocumentId = null;
+        }
+        catch (Exception ex)
+        {
+            _uploadError = $"Error deleting document: {ex.Message}";
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_searchTimer != null)
+        {
+            _searchTimer.Dispose();
+        }
+    }
+}

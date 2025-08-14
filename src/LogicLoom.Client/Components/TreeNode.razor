@@ -1,0 +1,85 @@
+@using LogicLoom.Client.Services
+
+<div class="tree-view @(Expanded ? "expanded" : "")" style="margin-left: @(Level * 20)px">
+    <div class="tree-node" @onclick="ToggleExpanded">
+        @if (Node.Children.Any())
+        {
+            <span class="expander">@(Expanded ? "▼" : "▶")</span>
+        }
+        else
+        {
+            <span class="expander-spacer"></span>
+        }
+        <span class="node-type">[@Node.Type]</span>
+        <span class="node-label">@Node.Label</span>
+    </div>
+    @if (Expanded)
+    {
+        <div class="tree-children">
+            @foreach (var child in Node.Children)
+            {
+                @* Use full component name to avoid naming conflicts *@
+                <LogicLoom.Client.Components.TreeNode Node="@child" Level="@(Level + 1)" />
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .tree-view {
+        font-family: var(--vscode-editor-font-family);
+        font-size: var(--vscode-editor-font-size);
+        line-height: 1.5;
+    }
+
+    .tree-node {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .tree-node:hover {
+        background-color: var(--vscode-list-hoverBackground);
+    }
+
+    .expander,
+    .expander-spacer {
+        width: 1rem;
+        text-align: center;
+        font-family: monospace;
+    }
+
+    .node-type {
+        color: var(--vscode-symbolIcon-classForeground);
+        font-size: 0.9em;
+    }
+
+    .node-label {
+        color: var(--vscode-editor-foreground);
+    }
+
+    .tree-children {
+        margin-left: 0.5rem;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public TreeNodeViewModel Node { get; set; } = null!;
+
+    [Parameter]
+    public int Level { get; set; }
+
+    private bool Expanded { get; set; } = true;
+
+    private void ToggleExpanded()
+    {
+        if (Node.Children.Any())
+        {
+            Expanded = !Expanded;
+        }
+    }
+}
