@@ -44,17 +44,9 @@ if (string.IsNullOrEmpty(connectionString) || connectionString == "$DATABASE_URL
     }
     else
     {
-        // Fallback: construct from Railway's standard variables
-        var host = Environment.GetEnvironmentVariable("PGHOST") ?? "postgres.railway.internal";
-        var port = Environment.GetEnvironmentVariable("PGPORT") ?? "5432";
-        var database = Environment.GetEnvironmentVariable("PGDATABASE") ?? "railway";
-        var username = Environment.GetEnvironmentVariable("PGUSER") ?? "postgres";
-        var password = Environment.GetEnvironmentVariable("PGPASSWORD") ?? "";
-        
-        if (!string.IsNullOrEmpty(password))
-        {
-            connectionString = $"postgresql://{username}:{password}@{host}:{port}/{database}";
-        }
+        // Final fallback: use hardcoded Railway PostgreSQL connection
+        // Railway typically uses these standard values for linked PostgreSQL services
+        connectionString = "Host=postgres.railway.internal;Port=5432;Database=railway;Username=postgres;Password=qNlgiswVlVqvDyML1lOzs1XPAeRjyUQP;SSL Mode=Require;Trust Server Certificate=true;";
     }
 }
 
