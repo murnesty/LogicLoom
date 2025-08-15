@@ -52,16 +52,30 @@ builder.Services.AddScoped<IWordMLParser, WordMLParser>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Run database migrations automatically
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    var context = scope.ServiceProvider.GetRequiredService<DocumentDbContext>();
+    try
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "LogicLoom API v1");
-        c.DocExpansion(DocExpansion.None);
-    });
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
 }
+
+// Configure the HTTP request pipeline.
+// Enable Swagger in all environments for API testing
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "LogicLoom API v1");
+    c.DocExpansion(DocExpansion.None);
+    c.RoutePrefix = "swagger"; // Swagger will be available at /swagger
+});
 
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
