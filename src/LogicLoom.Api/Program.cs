@@ -30,8 +30,40 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure database - hardcode connection to bypass Railway env var issues
-var connectionString = "Host=postgres.railway.internal;Port=5432;Database=railway;Username=postgres;Password=qNlgiswVlVqvDyML1lOzs1XPAeRjyUQP;SSL Mode=Require;Trust Server Certificate=true;";
+// Configure database - prefer Railway PG* env vars, then DATABASE_URL, then appsettings
+string? connectionString = null;
+
+// 1) Prefer Railway's standard PG* variables (these are present when a Postgres service is linked)
+var pgHost = Environment.GetEnvironmentVariable("PGHOST");
+var pgPort = Environment.GetEnvironmentVariable("PGPORT");
+var pgDb = Environment.GetEnvironmentVariable("PGDATABASE");
+var pgUser = Environment.GetEnvironmentVariable("PGUSER");
+var pgPass = Environment.GetEnvironmentVariable("PGPASSWORD");
+
+if (!string.IsNullOrWhiteSpace(pgHost) &&
+    !string.IsNullOrWhiteSpace(pgPort) &&
+    !string.IsNullOrWhiteSpace(pgDb) &&
+    !string.IsNullOrWhiteSpace(pgUser) &&
+    !string.IsNullOrWhiteSpace(pgPass))
+{
+    connectionString = $"Host={pgHost};Port={pgPort};Database={pgDb};Username={pgUser};Password={pgPass};SSL Mode=Require;Trust Server Certificate=true;";
+}
+
+// 2) Else try DATABASE_URL
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    var dbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (!string.IsNullOrWhiteSpace(dbUrl) && dbUrl != "$DATABASE_URL")
+    {
+        connectionString = dbUrl;
+    }
+}
+
+// 3) Else fallback to appsettings (may be $DATABASE_URL in Production appsettings, we convert if needed)
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+}
 
 // Handle Railway DATABASE_URL format
 if (connectionString?.StartsWith("postgresql://") == true)
