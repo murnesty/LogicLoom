@@ -9,3 +9,4 @@ restartPolicyType = "ON_FAILURE"
 [environments.production.variables]
 ASPNETCORE_ENVIRONMENT = "Production"
 ASPNETCORE_URLS = "http://0.0.0.0:$PORT"
+ConnectionStrings__DefaultConnection = "${{Postgres.DATABASE_URL}}"
