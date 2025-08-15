@@ -1,0 +1,7 @@
+# Ignore files that might trigger incorrect build detection
+nixpacks.toml
+.nixpacks/
+node_modules/
+package.json
+*.py
+requirements.txt
