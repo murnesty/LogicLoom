@@ -40,11 +40,31 @@ public class DocumentController : ControllerBase
         var connectionString = _configuration.GetConnectionString("DefaultConnection");
         var envConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
         var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+        string? dbContextConn = null;
+        string? openTest = null;
+        try
+        {
+            dbContextConn = _dbContext.Database.GetDbConnection().ConnectionString;
+            // Try opening explicitly to surface parse/network errors clearly
+            var conn = _dbContext.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                conn.Open();
+                openTest = "Opened OK";
+                conn.Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            openTest = $"OPEN FAILED: {ex.GetType().Name}: {ex.Message}";
+        }
 
         return Ok(new
         {
             ConnectionString = connectionString ?? "NULL",
             ConnectionString_Full = connectionString?.Length > 100 ? connectionString.Substring(0, 100) + "..." : connectionString,
+            DbContext_ConnectionString = dbContextConn,
+            DbContext_OpenTest = openTest,
             Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
             Variables = new
             {

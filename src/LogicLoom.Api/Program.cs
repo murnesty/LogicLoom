@@ -30,8 +30,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Configure database - hardcode connection to bypass Railway env var issues
+var connectionString = "Host=postgres.railway.internal;Port=5432;Database=railway;Username=postgres;Password=qNlgiswVlVqvDyML1lOzs1XPAeRjyUQP;SSL Mode=Require;Trust Server Certificate=true;";
 
 // Handle Railway DATABASE_URL format
 if (connectionString?.StartsWith("postgresql://") == true)
