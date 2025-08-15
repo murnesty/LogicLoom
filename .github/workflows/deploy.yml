@@ -1,0 +1,50 @@
+name: Deploy LogicLoom
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore src/LogicLoom.sln
+
+      - name: Build
+        run: dotnet build src/LogicLoom.sln --no-restore
+
+      - name: Test
+        run: dotnet test src/LogicLoom.sln --no-build --verbosity normal
+
+  deploy-frontend:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish Blazor App
+        run: |
+          cd src/LogicLoom.Client
+          dotnet publish -c Release -o publish
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: src/LogicLoom.Client/publish/wwwroot

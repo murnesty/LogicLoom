@@ -1,0 +1,13 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "dotnet publish src/LogicLoom.Api -c Release -o out"
+
+[deploy]
+startCommand = "dotnet out/LogicLoom.Api.dll"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+
+[environments.production.variables]
+ASPNETCORE_ENVIRONMENT = "Production"
+ASPNETCORE_URLS = "http://0.0.0.0:$PORT"

@@ -1,6 +1,7 @@
 using LogicLoom.DocumentProcessor.Services;
 using LogicLoom.Storage;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
@@ -17,18 +18,34 @@ builder.Services.AddSwaggerGen(c =>
 // Configure CORS for Blazor client
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowBlazor",
-        policy => policy
-            .WithOrigins("http://localhost:5024")
-            .AllowAnyMethod()
-            .AllowAnyHeader());
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                           ?? new[] { "http://localhost:5024", "https://localhost:7001" };
+
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
 });
 
 // Configure database
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Handle Railway DATABASE_URL format
+if (connectionString?.StartsWith("postgresql://") == true)
+{
+    connectionString = ConvertPostgresUrl(connectionString);
+}
+
 builder.Services.AddDbContext<DocumentDbContext>(options =>
 {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseNpgsql(connectionString);
 });
+
+// Add health checks
+builder.Services.AddHealthChecks();
 
 // Configure document processor services
 builder.Services.AddScoped<IWordMLParser, WordMLParser>();
@@ -46,9 +63,20 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseCors("AllowBlazor");
+app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
+
+// Add health check endpoint
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 
 app.Run();
+
+static string ConvertPostgresUrl(string databaseUrl)
+{
+    var uri = new Uri(databaseUrl);
+    var db = uri.LocalPath.TrimStart('/');
+    var userInfo = uri.UserInfo.Split(':');
+    return $"Host={uri.Host};Port={uri.Port};Database={db};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
+}
