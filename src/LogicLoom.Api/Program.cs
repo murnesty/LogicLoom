@@ -33,6 +33,31 @@ builder.Services.AddCors(options =>
 // Configure database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+// Railway fallback: try to build connection string manually
+if (string.IsNullOrEmpty(connectionString) || connectionString == "$DATABASE_URL")
+{
+    // Try Railway's automatic DATABASE_URL
+    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl != "$DATABASE_URL")
+    {
+        connectionString = databaseUrl;
+    }
+    else
+    {
+        // Fallback: construct from Railway's standard variables
+        var host = Environment.GetEnvironmentVariable("PGHOST") ?? "postgres.railway.internal";
+        var port = Environment.GetEnvironmentVariable("PGPORT") ?? "5432";
+        var database = Environment.GetEnvironmentVariable("PGDATABASE") ?? "railway";
+        var username = Environment.GetEnvironmentVariable("PGUSER") ?? "postgres";
+        var password = Environment.GetEnvironmentVariable("PGPASSWORD") ?? "";
+        
+        if (!string.IsNullOrEmpty(password))
+        {
+            connectionString = $"postgresql://{username}:{password}@{host}:{port}/{database}";
+        }
+    }
+}
+
 // Handle Railway DATABASE_URL format
 if (connectionString?.StartsWith("postgresql://") == true)
 {
