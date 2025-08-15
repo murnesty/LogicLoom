@@ -1,25 +1,25 @@
 # LogicLoom Railway Deployment Script for Windows
 
-Write-Host "🚀 Starting LogicLoom Railway Deployment..." -ForegroundColor Green
+Write-Host "Starting LogicLoom Railway Deployment..." -ForegroundColor Green
 
 function Write-Success {
     param($Message)
-    Write-Host "✅ $Message" -ForegroundColor Green
+    Write-Host "Success: $Message" -ForegroundColor Green
 }
 
 function Write-Info {
     param($Message)
-    Write-Host "ℹ️ $Message" -ForegroundColor Cyan
+    Write-Host "Info: $Message" -ForegroundColor Cyan
 }
 
 function Write-Warning {
     param($Message)
-    Write-Host "⚠️ $Message" -ForegroundColor Yellow
+    Write-Host "Warning: $Message" -ForegroundColor Yellow
 }
 
 function Write-Error {
     param($Message)
-    Write-Host "❌ $Message" -ForegroundColor Red
+    Write-Host "Error: $Message" -ForegroundColor Red
 }
 
 # Check if we're in the right directory
@@ -53,7 +53,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Success "Publishing API for Railway..."
-cd LogicLoom.Api
+Set-Location LogicLoom.Api
 dotnet publish -c Release -o publish
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to publish API"
@@ -61,7 +61,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Success "Publishing Blazor WebAssembly for GitHub Pages..."
-cd ../LogicLoom.Client
+Set-Location ..\LogicLoom.Client
 dotnet publish -c Release -o publish
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to publish Blazor app"
@@ -70,34 +70,34 @@ if ($LASTEXITCODE -ne 0) {
 
 Set-Location ..\..
 
-Write-Success "✨ Build completed successfully!"
+Write-Success "Build completed successfully!"
 Write-Host ""
-Write-Host "🚀 Next Steps for Railway Deployment:" -ForegroundColor Cyan
+Write-Host "Next Steps for Railway Deployment:" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "1. 📤 PUSH TO GITHUB:"
+Write-Host "1. PUSH TO GITHUB:"
 Write-Host "   git add ."
 Write-Host "   git commit -m 'Prepare for Railway deployment'"
 Write-Host "   git push origin main"
 Write-Host ""
-Write-Host "2. 🚂 DEPLOY TO RAILWAY:"
-Write-Host "   • Go to https://railway.app"
-Write-Host "   • Click 'Start a New Project'"
-Write-Host "   • Choose 'Deploy from GitHub repo'"
-Write-Host "   • Select your LogicLoom repository"
-Write-Host "   • Add PostgreSQL service (click 'Add Service' → 'Database' → 'PostgreSQL')"
-Write-Host "   • Your app will be live automatically! 🎉"
+Write-Host "2. DEPLOY TO RAILWAY:"
+Write-Host "   - Go to https://railway.app"
+Write-Host "   - Click 'Start a New Project'"
+Write-Host "   - Choose 'Deploy from GitHub repo'"
+Write-Host "   - Select your LogicLoom repository"
+Write-Host "   - Add PostgreSQL service"
+Write-Host "   - Your app will be live automatically!"
 Write-Host ""
-Write-Host "3. 🌐 CONFIGURE FRONTEND:"
-Write-Host "   • Update src/LogicLoom.Client/wwwroot/appsettings.Production.json"
-Write-Host "   • Set ApiBaseUrl to your Railway app URL"
-Write-Host "   • Push changes to trigger GitHub Pages deployment"
+Write-Host "3. CONFIGURE FRONTEND:"
+Write-Host "   - Update src/LogicLoom.Client/wwwroot/appsettings.Production.json"
+Write-Host "   - Set ApiBaseUrl to your Railway app URL"
+Write-Host "   - Push changes to trigger GitHub Pages deployment"
 Write-Host ""
-Write-Host "🔗 Your URLs will be:" -ForegroundColor Yellow
-Write-Host "   Frontend: https://yourusername.github.io/LogicLoom"
+Write-Host "Your URLs will be:" -ForegroundColor Yellow
+Write-Host "   Frontend: https://murnesty.github.io/LogicLoom"
 Write-Host "   API: https://your-app-name.railway.app"
 Write-Host "   Health Check: https://your-app-name.railway.app/health"
 Write-Host ""
-Write-Host "💰 Cost: FREE for 1-2 months, then $5/month"
-Write-Host "🔒 Security: SOC 2 Type II compliant (enterprise-grade)"
+Write-Host "Cost: FREE for 1-2 months, then $5/month" -ForegroundColor Green
+Write-Host "Security: SOC 2 Type II compliant (enterprise-grade)" -ForegroundColor Green
 Write-Host ""
-Write-Host "📚 Need help? Check docs/deployment/README.md"
+Write-Host "Need help? Check docs/deployment/README.md" -ForegroundColor Cyan
