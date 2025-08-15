@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace LogicLoom.Api.Controllers;
 
@@ -18,15 +19,49 @@ public class DocumentController : ControllerBase
     private readonly IWordMLParser _parser;
     private readonly DocumentDbContext _dbContext;
     private readonly ILogger<DocumentController> _logger;
+    private readonly IConfiguration _configuration;
 
     public DocumentController(
         IWordMLParser parser,
         DocumentDbContext dbContext,
-        ILogger<DocumentController> logger)
+        ILogger<DocumentController> logger,
+        IConfiguration configuration)
     {
         _parser = parser;
         _dbContext = dbContext;
         _logger = logger;
+        _configuration = configuration;
+    }
+
+    [HttpGet("debug")]
+    public IActionResult Debug()
+    {
+        var connectionString = _configuration.GetConnectionString("DefaultConnection");
+        return Ok(new
+        {
+            ConnectionString = connectionString?.Length > 0 ? connectionString.Substring(0, Math.Min(50, connectionString.Length)) + "..." : "NULL",
+            Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
+            Variables = new
+            {
+                DATABASE_URL = Environment.GetEnvironmentVariable("DATABASE_URL")?.Substring(0, Math.Min(30, Environment.GetEnvironmentVariable("DATABASE_URL")?.Length ?? 0)) + "...",
+                ConnectionString_Raw = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")?.Substring(0, Math.Min(50, Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")?.Length ?? 0)) + "..."
+            }
+        });
+    }
+
+    [HttpGet("test")]
+    public async Task<IActionResult> TestDatabase()
+    {
+        try
+        {
+            var count = await _dbContext.Nodes.CountAsync();
+            return Ok(new { Message = "Database connection successful", NodeCount = count });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Database test failed");
+            return StatusCode(500, $"Database error: {ex.Message}");
+        }
     }
 
     [HttpPost("upload")]
