@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using LogicLoom.DocumentProcessor.Models;
 using LogicLoom.DocumentProcessor.Services;
@@ -37,14 +38,19 @@ public class DocumentController : ControllerBase
     public IActionResult Debug()
     {
         var connectionString = _configuration.GetConnectionString("DefaultConnection");
+        var envConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+        var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
         return Ok(new
         {
-            ConnectionString = connectionString?.Length > 0 ? connectionString.Substring(0, Math.Min(50, connectionString.Length)) + "..." : "NULL",
+            ConnectionString = connectionString ?? "NULL",
+            ConnectionString_Full = connectionString?.Length > 100 ? connectionString.Substring(0, 100) + "..." : connectionString,
             Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
             Variables = new
             {
-                DATABASE_URL = Environment.GetEnvironmentVariable("DATABASE_URL")?.Substring(0, Math.Min(30, Environment.GetEnvironmentVariable("DATABASE_URL")?.Length ?? 0)) + "...",
-                ConnectionString_Raw = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")?.Substring(0, Math.Min(50, Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")?.Length ?? 0)) + "..."
+                DATABASE_URL_Full = databaseUrl?.Length > 100 ? databaseUrl.Substring(0, 100) + "..." : databaseUrl ?? "NULL",
+                ConnectionStrings__DefaultConnection_Full = envConnectionString?.Length > 100 ? envConnectionString.Substring(0, 100) + "..." : envConnectionString ?? "NULL",
+                AllEnvVars = Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(k => k.Contains("DATABASE") || k.Contains("CONNECTION")).ToList()
             }
         });
     }

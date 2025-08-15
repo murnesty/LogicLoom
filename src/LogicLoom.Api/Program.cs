@@ -52,6 +52,7 @@ builder.Services.AddScoped<IWordMLParser, WordMLParser>();
 
 var app = builder.Build();
 
+// Database connection updated - trigger redeploy
 // Run database migrations automatically
 using (var scope = app.Services.CreateScope())
 {
