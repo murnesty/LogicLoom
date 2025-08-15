@@ -59,10 +59,24 @@ if (string.IsNullOrWhiteSpace(connectionString))
     }
 }
 
-// 3) Else fallback to appsettings (may be $DATABASE_URL in Production appsettings, we convert if needed)
+// 3) Else fallback to appsettings (Production may override with "$DATABASE_URL").
+// Read the effective value first, then if it's "$DATABASE_URL" try the base appsettings.json explicitly.
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+}
+
+// Treat literal "$DATABASE_URL" as unset and try base appsettings.json
+if (string.Equals(connectionString, "$DATABASE_URL", StringComparison.OrdinalIgnoreCase))
+{
+    var baseConfig = new ConfigurationBuilder()
+        .AddJsonFile("appsettings.json", optional: true)
+        .Build();
+    var baseConn = baseConfig.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrWhiteSpace(baseConn))
+    {
+        connectionString = baseConn;
+    }
 }
 
 // Handle Railway DATABASE_URL format
