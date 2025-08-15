@@ -33,23 +33,6 @@ builder.Services.AddCors(options =>
 // Configure database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Railway fallback: try to build connection string manually
-if (string.IsNullOrEmpty(connectionString) || connectionString == "$DATABASE_URL")
-{
-    // Try Railway's automatic DATABASE_URL
-    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-    if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl != "$DATABASE_URL")
-    {
-        connectionString = databaseUrl;
-    }
-    else
-    {
-        // Final fallback: use hardcoded Railway PostgreSQL connection
-        // Railway typically uses these standard values for linked PostgreSQL services
-        connectionString = "Host=postgres.railway.internal;Port=5432;Database=railway;Username=postgres;Password=qNlgiswVlVqvDyML1lOzs1XPAeRjyUQP;SSL Mode=Require;Trust Server Certificate=true;";
-    }
-}
-
 // Handle Railway DATABASE_URL format
 if (connectionString?.StartsWith("postgresql://") == true)
 {
