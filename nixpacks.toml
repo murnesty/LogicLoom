@@ -1,0 +1,16 @@
+[variables]
+NIXPACKS_METADATA = "dotnet"
+
+[phases.setup]
+nixPkgs = ["dotnet-sdk_8", "dotnet-runtime_8"]
+
+[phases.build]
+cmds = [
+    "dotnet --version",
+    "ls -la",
+    "dotnet restore LogicLoom.sln",
+    "dotnet publish src/LogicLoom.Api -c Release -o out --no-restore"
+]
+
+[start]
+cmd = "dotnet out/LogicLoom.Api.dll"
