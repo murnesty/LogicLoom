@@ -25,7 +25,7 @@ if (isProduction)
         var uri = new Uri(databaseUrl);
         var userInfo = uri.UserInfo?.Split(':');
 
-        if (userInfo != null && userInfo.Length >= 2)
+        if (userInfo != null && userInfo.Length >= 2 && !string.IsNullOrEmpty(userInfo[0]) && !string.IsNullOrEmpty(userInfo[1]))
         {
             connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
             Console.WriteLine("Converted Railway DATABASE_URL to Npgsql format");
@@ -61,6 +61,7 @@ else
 // Register application services
 builder.Services.AddHttpClient(); // Add HttpClient for RSS fetching
 builder.Services.AddScoped<IContentScraperService, RSSFeedService>(); // Use real RSS feeds
+builder.Services.AddScoped<IAIModelScraperService, AIModelScraperService>(); // Use real AI model scraping
 builder.Services.AddScoped<IContentProcessingService, MockContentProcessingService>();
 builder.Services.AddScoped<IDataStorageService, DataStorageService>();
 
@@ -135,10 +136,10 @@ try
         if (!await context.AIModels.AnyAsync())
         {
             Console.WriteLine("Seeding AI models...");
-            var scraper = scope.ServiceProvider.GetRequiredService<IContentScraperService>();
+            var modelScraper = scope.ServiceProvider.GetRequiredService<IAIModelScraperService>();
             var storage = scope.ServiceProvider.GetRequiredService<IDataStorageService>();
 
-            var models = await scraper.ScrapeModelReleasesAsync();
+            var models = await modelScraper.FetchLatestModelsAsync();
             int successCount = 0;
             foreach (var model in models)
             {
