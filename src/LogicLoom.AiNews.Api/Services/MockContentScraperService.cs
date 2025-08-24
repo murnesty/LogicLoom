@@ -14,14 +14,14 @@ public class MockContentScraperService : IContentScraperService
         {
             new NewsArticle
             {
-                Title = "OpenAI Announces GPT-4o with Enhanced Multimodal Capabilities",
-                Content = "OpenAI has released GPT-4o, a new version of their flagship model that brings significant improvements in multimodal processing. The model can now handle text, images, audio, and video inputs simultaneously, offering 50% cost reduction compared to GPT-4. Key features include real-time voice interaction, improved reasoning capabilities, and reduced hallucinations. The model demonstrates superior performance across various benchmarks while maintaining the safety standards expected from OpenAI's systems.",
+                Title = "OpenAI Announces GPT-5.0 with Revolutionary AI Capabilities",
+                Content = "OpenAI has released GPT-5.0, the most advanced version of their flagship model that brings groundbreaking improvements in reasoning, multimodal processing, and efficiency. The model features enhanced logical reasoning, scientific problem-solving capabilities, and significantly reduced computational costs. Key features include real-time multimodal interaction, advanced mathematical reasoning, improved code generation, and state-of-the-art safety measures. GPT-5.0 demonstrates superior performance across all benchmarks while offering 60% cost reduction compared to previous models.",
                 Source = "OpenAI Blog",
-                SourceUrl = "https://openai.com/blog/gpt-4o-announcement",
-                PublishDate = DateTime.UtcNow.AddDays(-2),
+                SourceUrl = "https://openai.com/blog/gpt-5-announcement",
+                PublishDate = DateTime.UtcNow.AddDays(-1),
                 Category = "Model Release",
-                Summary = "OpenAI releases GPT-4o with multimodal capabilities and 50% cost reduction",
-                Tags = new List<string> { "OpenAI", "GPT-4o", "Multimodal", "Cost Reduction" }
+                Summary = "OpenAI releases GPT-5.0 with revolutionary AI capabilities and 60% cost reduction",
+                Tags = new List<string> { "OpenAI", "GPT-5.0", "Advanced Reasoning", "Cost Reduction", "Multimodal" }
             },
             new NewsArticle
             {
@@ -68,14 +68,14 @@ public class MockContentScraperService : IContentScraperService
         {
             new AIModel
             {
-                Name = "GPT-4o",
-                Version = "4o",
+                Name = "GPT-5.0",
+                Version = "5.0",
                 Company = "OpenAI",
-                ReleaseDate = new DateTime(2024, 5, 15, 0, 0, 0, DateTimeKind.Utc),
-                Description = "Multimodal AI model with text, image, audio, and video capabilities",
-                Capabilities = new List<string> { "Text Generation", "Image Analysis", "Audio Processing", "Video Understanding", "Code Generation" },
-                ContextWindow = "128K tokens",
-                Pricing = "$5/1M input tokens, $15/1M output tokens",
+                ReleaseDate = new DateTime(2024, 12, 15, 0, 0, 0, DateTimeKind.Utc),
+                Description = "Revolutionary AI model with advanced reasoning, multimodal capabilities, and superior efficiency",
+                Capabilities = new List<string> { "Advanced Reasoning", "Multimodal Processing", "Scientific Analysis", "Code Generation", "Mathematical Problem Solving", "Creative Intelligence" },
+                ContextWindow = "256K tokens",
+                Pricing = "$3/1M input tokens, $10/1M output tokens",
                 IsMultimodal = true
             },
             new AIModel

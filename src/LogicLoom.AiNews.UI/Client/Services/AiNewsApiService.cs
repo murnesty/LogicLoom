@@ -146,6 +146,63 @@ public class AiNewsApiService
             return new RefreshResult { Success = false, Message = $"❌ Error: {ex.Message}" };
         }
     }
+
+    // Targeted monitoring endpoints
+    public async Task<List<TargetedUpdate>> GetTargetedUpdatesAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/targets/all");
+            return JsonSerializer.Deserialize<List<TargetedUpdate>>(response, _jsonOptions) ?? new List<TargetedUpdate>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching targeted updates: {ex.Message}");
+            return new List<TargetedUpdate>();
+        }
+    }
+
+    public async Task<List<TargetUpdate>> GetModelTargetsAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/targets/models");
+            return JsonSerializer.Deserialize<List<TargetUpdate>>(response, _jsonOptions) ?? new List<TargetUpdate>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching model targets: {ex.Message}");
+            return new List<TargetUpdate>();
+        }
+    }
+
+    public async Task<List<TargetUpdate>> GetToolTargetsAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/targets/tools");
+            return JsonSerializer.Deserialize<List<TargetUpdate>>(response, _jsonOptions) ?? new List<TargetUpdate>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching tool targets: {ex.Message}");
+            return new List<TargetUpdate>();
+        }
+    }
+
+    public async Task<TargetingSummary> GetTargetingSummaryAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/targets/summary");
+            return JsonSerializer.Deserialize<TargetingSummary>(response, _jsonOptions) ?? new TargetingSummary();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching targeting summary: {ex.Message}");
+            return new TargetingSummary();
+        }
+    }
 }
 
 // DTOs for admin functionality
@@ -173,4 +230,45 @@ public class RefreshDataResponse
     public int NewsArticles { get; set; }
     public int AIModels { get; set; }
     public List<string> Errors { get; set; } = new();
+}
+
+// Targeted monitoring DTOs
+public class TargetedUpdate
+{
+    public string Type { get; set; } = "";  // "Model" or "Tool"
+    public string Target { get; set; } = "";
+    public string Company { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public DateTime UpdateDate { get; set; }
+    public string SourceUrl { get; set; } = "";
+    public int Priority { get; set; }
+    public List<string> Tags { get; set; } = new();
+}
+
+public class TargetUpdate
+{
+    public string Target { get; set; } = "";
+    public string Company { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public DateTime UpdateDate { get; set; }
+    public string SourceUrl { get; set; } = "";
+    public List<string> Tags { get; set; } = new();
+}
+
+public class TargetingSummary
+{
+    public int TotalUpdates { get; set; }
+    public int ModelUpdates { get; set; }
+    public int ToolUpdates { get; set; }
+    public int HighPriority { get; set; }
+    public List<TargetCount> TopTargets { get; set; } = new();
+    public DateTime? LatestUpdate { get; set; }
+}
+
+public class TargetCount
+{
+    public string Target { get; set; } = "";
+    public int Count { get; set; }
 }

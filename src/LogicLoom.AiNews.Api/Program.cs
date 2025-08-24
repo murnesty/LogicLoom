@@ -62,6 +62,7 @@ else
 builder.Services.AddHttpClient(); // Add HttpClient for RSS fetching
 builder.Services.AddScoped<IContentScraperService, RSSFeedService>(); // Use real RSS feeds
 builder.Services.AddScoped<IAIModelScraperService, AIModelScraperService>(); // Use real AI model scraping
+builder.Services.AddScoped<ITargetedMonitoringService, TargetedMonitoringService>(); // Add targeted monitoring
 builder.Services.AddScoped<IContentProcessingService, MockContentProcessingService>();
 builder.Services.AddScoped<IDataStorageService, DataStorageService>();
 

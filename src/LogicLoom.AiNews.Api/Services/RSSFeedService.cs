@@ -121,14 +121,14 @@ public class RSSFeedService : IContentScraperService
         {
             new AIModel
             {
-                Name = "GPT-4o",
-                Version = "4o",
+                Name = "GPT-5.0",
+                Version = "5.0",
                 Company = "OpenAI",
-                ReleaseDate = new DateTime(2024, 5, 15, 0, 0, 0, DateTimeKind.Utc),
-                Description = "Multimodal AI model with text, image, audio, and video capabilities",
-                Capabilities = new List<string> { "Text Generation", "Image Analysis", "Audio Processing", "Video Understanding", "Code Generation" },
-                ContextWindow = "128K tokens",
-                Pricing = "$5/1M input tokens, $15/1M output tokens",
+                ReleaseDate = new DateTime(2024, 12, 15, 0, 0, 0, DateTimeKind.Utc),
+                Description = "Next-generation AI model with advanced reasoning, multimodal capabilities, and improved efficiency",
+                Capabilities = new List<string> { "Advanced Reasoning", "Multimodal Processing", "Code Generation", "Scientific Analysis", "Creative Writing", "Complex Problem Solving" },
+                ContextWindow = "256K tokens",
+                Pricing = "$3/1M input tokens, $10/1M output tokens",
                 IsMultimodal = true
             },
             new AIModel
