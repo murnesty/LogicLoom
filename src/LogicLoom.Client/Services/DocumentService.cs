@@ -8,7 +8,7 @@ namespace LogicLoom.Client.Services;
 
 public interface IDocumentService
 {
-    Task<DocumentProcessingResult> UploadDocumentAsync(MultipartFormDataContent content);
+    Task<LogicLoom.Shared.Models.UploadResult> UploadDocumentAsync(MultipartFormDataContent content);
     Task<DocumentView> GetDocumentAsync(Guid documentId);
     Task<DocumentStructureView> GetDocumentStructureAsync(Guid documentId);
     Task DeleteDocumentAsync(Guid documentId);
@@ -26,12 +26,12 @@ public class DocumentService : IDocumentService
         _httpClient = httpClient;
     }
 
-    public async Task<DocumentProcessingResult> UploadDocumentAsync(MultipartFormDataContent content)
+    public async Task<LogicLoom.Shared.Models.UploadResult> UploadDocumentAsync(MultipartFormDataContent content)
     {
         var response = await _httpClient.PostAsync("api/document/upload", content);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<DocumentProcessingResult>()
-            ?? throw new Exception("Failed to parse response");
+        var result = await response.Content.ReadFromJsonAsync<LogicLoom.Shared.Models.UploadResult>();
+        return result ?? throw new Exception("Failed to parse upload response");
     }
 
     public async Task<DocumentView> GetDocumentAsync(Guid documentId)

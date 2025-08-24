@@ -119,7 +119,19 @@ public class DocumentController : ControllerBase
             await _dbContext.Relationships.AddRangeAsync(relationships);
             await _dbContext.SaveChangesAsync();
 
-            return Ok(new { DocumentId = nodes.First().DocumentId });
+            // Build a small preview from the first few nodes
+            var preview = string.Join(" ", nodes.OrderBy(n => n.Position).Take(3).Select(n => n.Content));
+            var result = new LogicLoom.Shared.Models.UploadResult
+            {
+                DocumentId = nodes.First().DocumentId,
+                NodeCount = nodes.Count(),
+                Preview = preview,
+                FileName = file.FileName,
+                ContentType = file.ContentType ?? string.Empty,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -194,7 +206,7 @@ public class DocumentController : ControllerBase
             .Select(g => new LogicLoom.Shared.Models.DocumentSearchResult(
                 g.Key,
                 string.Join(" ", g.Take(3).Select(n => n.Content)),
-                nodes.Count(n => n.DocumentId == g.Key),
+                nodes.Where(n => n.DocumentId == g.Key).Count(),
                 nodes
                     .Where(n => n.DocumentId == g.Key)
                     .Select(n => new LogicLoom.Shared.Models.SearchMatch(n.Content, n.Position, n.Level))
