@@ -16,22 +16,23 @@ var useDatabase = !string.IsNullOrEmpty(databaseUrl);
 
 if (useDatabase)
 {
-    // Parse Railway DATABASE_URL format: postgres://username:password@host:port/database
     string connectionString;
-    if (databaseUrl.StartsWith("postgres://"))
+
+    if (databaseUrl.StartsWith("postgres://") || databaseUrl.StartsWith("postgresql://"))
     {
-        // Convert Railway format to Npgsql connection string
+        // Convert Railway DATABASE_URL to Npgsql connection string
         var uri = new Uri(databaseUrl);
-        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={uri.UserInfo.Split(':')[0]};Password={uri.UserInfo.Split(':')[1]};SSL Mode=Require;Trust Server Certificate=true";
-        Console.WriteLine($"Converted Railway DATABASE_URL to Npgsql format");
+        var userInfo = uri.UserInfo.Split(':');
+
+        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
+        Console.WriteLine("Converted Railway DATABASE_URL to Npgsql format");
     }
     else
     {
-        // Use as-is if already in correct format
+        // Already in Npgsql format
         connectionString = databaseUrl;
     }
 
-    // Railway PostgreSQL connection - Production
     builder.Services.AddDbContext<AiNewsDbContext>(options =>
         options.UseNpgsql(connectionString));
 
@@ -39,7 +40,6 @@ if (useDatabase)
 }
 else
 {
-    // No database - use in-memory mock data only
     Console.WriteLine("No DATABASE_URL found - running in mock-only mode");
 }
 
