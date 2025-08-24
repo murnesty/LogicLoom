@@ -37,14 +37,19 @@ builder.Services.AddScoped<IDataStorageService, DataStorageService>();
 // Add health checks
 builder.Services.AddHealthChecks();
 
-// Add CORS for development
+// Add CORS for development and production
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
+        builder.WithOrigins(
+                "http://localhost:5173",           // Local Blazor dev
+                "http://localhost:5000",           // Local Blazor alt port
+                "https://murnesty.github.io"       // GitHub Pages
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 
