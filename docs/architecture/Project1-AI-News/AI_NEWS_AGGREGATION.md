@@ -313,10 +313,10 @@ flowchart LR
 ```mermaid
 flowchart TD
     %% API Endpoints
-    API1[GET /api/models/latest] --> |Model[]| Timeline[Model Timeline Component]
+    API1[GET /api/models/latest] --> |ModelList| Timeline[Model Timeline Component]
     API2[GET /api/models/compare] --> |ComparisonData| Matrix[Comparison Matrix]
     API3[GET /api/benchmarks/:id] --> |BenchmarkData| Charts[Performance Charts]
-    API4[GET /api/news/trending] --> |NewsArticle[]| Feed[News Feed]
+    API4[GET /api/news/trending] --> |NewsArticles| Feed[News Feed]
     API5[GET /api/models/:id] --> |ModelDetails| Explorer[Model Explorer]
     
     %% Component Processing
@@ -424,7 +424,7 @@ flowchart TD
 - [ ] Setup microservice architecture
 - [ ] Implement basic content scraper
 - [ ] Create EF Core data models
-- [ ] Deploy to Render.com free tier
+- [ ] Deploy to Railway.app free tier
 
 ### Phase 2: Core Features (Weeks 5-8)
 - [ ] Build model comparison engine
@@ -477,9 +477,177 @@ flowchart TD
 - [AngleSharp](https://anglesharp.github.io/) - HTML parsing
 
 ### Deployment & Hosting
-- [Render.com](https://render.com/) - Backend hosting
+- [Railway.app](https://railway.app/) - Backend hosting & PostgreSQL database
 - [GitHub Pages](https://pages.github.com/) - Frontend hosting
 - [GitHub Actions](https://github.com/features/actions) - CI/CD pipeline
+
+---
+
+## 🚀 Railway Deployment Configuration
+
+### Backend Services Deployment
+
+#### **Railway.app Setup**
+```yaml
+# railway.json
+{
+  "build": {
+    "builder": "nixpacks",
+    "buildCommand": "dotnet publish -c Release -o out"
+  },
+  "deploy": {
+    "startCommand": "dotnet out/LogicLoom.Api.dll",
+    "healthcheckPath": "/health",
+    "restartPolicyType": "on-failure"
+  }
+}
+```
+
+#### **Environment Variables**
+```bash
+# Railway Environment Variables
+DATABASE_URL=postgresql://username:password@hostname:port/database
+ASPNETCORE_ENVIRONMENT=Production
+ASPNETCORE_URLS=http://0.0.0.0:$PORT
+ConnectionStrings__DefaultConnection=$DATABASE_URL
+SignalR__HubUrl=https://your-app.railway.app/notificationhub
+CORS__AllowedOrigins=https://yourusername.github.io
+```
+
+#### **PostgreSQL Database**
+- Railway provides managed PostgreSQL with automatic backups
+- Connection string automatically injected via `DATABASE_URL`
+- 1GB storage on free tier, scales as needed
+- No setup required - provisions automatically
+
+#### **Service Configuration**
+```csharp
+// Program.cs - Railway-specific configuration
+var builder = WebApplication.CreateBuilder(args);
+
+// Railway uses PORT environment variable
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+// PostgreSQL connection from Railway
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// CORS for GitHub Pages
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.WithOrigins("https://yourusername.github.io")
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials();
+    });
+});
+
+var app = builder.Build();
+app.UseCors();
+app.MapHub<NotificationHub>("/notificationhub");
+```
+
+### Deployment Workflow
+
+#### **GitHub Actions for Railway**
+```yaml
+# .github/workflows/deploy-railway.yml
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'src/**' ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore src/LogicLoom.Api
+    
+    - name: Build
+      run: dotnet build src/LogicLoom.Api --no-restore
+    
+    - name: Test
+      run: dotnet test src/LogicLoom.Tests --no-build --verbosity normal
+    
+    - name: Deploy to Railway
+      uses: bervProject/railway-deploy@v1.2.0
+      with:
+        railway_token: ${{ secrets.RAILWAY_TOKEN }}
+        service: logicloom-api
+```
+
+#### **Railway CLI Deployment**
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login to Railway
+railway login
+
+# Link to existing project
+railway link
+
+# Deploy current directory
+railway up
+
+# Set environment variables
+railway variables set ASPNETCORE_ENVIRONMENT=Production
+railway variables set CORS__AllowedOrigins=https://yourusername.github.io
+
+# View logs
+railway logs
+```
+
+### Railway Advantages for LogicLoom
+
+#### **✅ Benefits**
+- **Automatic PostgreSQL**: Managed database with no setup required
+- **Git Integration**: Auto-deploy on push to main branch
+- **Environment Variables**: Easy configuration management
+- **Scaling**: Automatic scaling based on traffic
+- **Custom Domains**: Support for custom domain names
+- **Monitoring**: Built-in metrics and logging
+- **No Sleep Mode**: Unlike Render free tier, Railway keeps services active
+
+#### **💰 Cost Structure**
+- **Starter Plan**: $5/month with $5 credit included
+- **Resource-based Pricing**: Pay only for what you use
+- **Database**: Included PostgreSQL with backups
+- **Bandwidth**: Generous limits for hobby projects
+- **Build Time**: Fast builds with caching
+
+#### **🔧 Railway-Specific Optimizations**
+```csharp
+// Health check endpoint for Railway
+app.MapGet("/health", () => Results.Ok(new { 
+    status = "healthy", 
+    timestamp = DateTime.UtcNow,
+    environment = Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT")
+}));
+
+// Railway deployment info
+app.MapGet("/info", () => Results.Ok(new {
+    service = Environment.GetEnvironmentVariable("RAILWAY_SERVICE_NAME"),
+    deployment = Environment.GetEnvironmentVariable("RAILWAY_DEPLOYMENT_ID"),
+    replica = Environment.GetEnvironmentVariable("RAILWAY_REPLICA_ID")
+}));
+```
 
 ---
 
