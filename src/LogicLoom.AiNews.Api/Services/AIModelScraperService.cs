@@ -81,13 +81,19 @@ public class AIModelScraperService : IAIModelScraperService
             foreach (var hfModel in huggingFaceModels.Take(10)) // Limit to prevent spam
             {
                 var modelId = hfModel.Id ?? hfModel.ModelId ?? "Unknown Model";
+                
+                // Ensure UTC DateTime
+                var releaseDate = hfModel.LastModified.Kind == DateTimeKind.Unspecified 
+                    ? DateTime.SpecifyKind(hfModel.LastModified, DateTimeKind.Utc)
+                    : hfModel.LastModified.ToUniversalTime();
+                
                 var model = new AIModel
                 {
                     Name = ExtractModelName(modelId),
                     Version = ExtractVersion(modelId),
                     Company = ExtractCompany(modelId),
                     Description = CleanDescription(modelId, hfModel.Tags),
-                    ReleaseDate = hfModel.LastModified,
+                    ReleaseDate = releaseDate,
                     Capabilities = ExtractCapabilities(hfModel.Tags, url),
                     ContextWindow = ExtractContextWindow(modelId, hfModel.Tags),
                     Pricing = "Open Source", // Most HF models are open source

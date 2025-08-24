@@ -82,14 +82,20 @@ public class RSSFeedService : IContentScraperService
 
             foreach (var item in feed.Items.Take(10)) // Limit to 10 per source
             {
+                // Ensure UTC DateTime for PostgreSQL compatibility
+                var publishDate = item.PublishDate.DateTime != DateTime.MinValue ? 
+                    (item.PublishDate.DateTime.Kind == DateTimeKind.Unspecified ? 
+                        DateTime.SpecifyKind(item.PublishDate.DateTime, DateTimeKind.Utc) : 
+                        item.PublishDate.DateTime.ToUniversalTime()) : 
+                    DateTime.UtcNow;
+
                 var article = new NewsArticle
                 {
                     Title = CleanText(item.Title?.Text ?? "No Title"),
                     Content = CleanText(item.Summary?.Text ?? item.Content?.ToString() ?? "No Content"),
                     Source = source.Name,
                     SourceUrl = item.Links?.FirstOrDefault()?.Uri?.ToString() ?? "",
-                    PublishDate = item.PublishDate.DateTime != DateTime.MinValue ? 
-                        item.PublishDate.DateTime : DateTime.UtcNow,
+                    PublishDate = publishDate,
                     Category = source.Category,
                     Summary = GenerateSummary(item.Summary?.Text ?? item.Content?.ToString() ?? ""),
                     Tags = ExtractTags(item.Title?.Text ?? "", item.Summary?.Text ?? "")
