@@ -10,27 +10,37 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configure Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Data Source=ainews.db";
-
-// Check for Railway PostgreSQL first
+// Configure Database (only if needed)
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-if (!string.IsNullOrEmpty(databaseUrl))
+var useDatabase = !string.IsNullOrEmpty(databaseUrl);
+
+if (useDatabase)
 {
-    // Railway PostgreSQL connection
+    // Parse Railway DATABASE_URL format: postgres://username:password@host:port/database
+    string connectionString;
+    if (databaseUrl.StartsWith("postgres://"))
+    {
+        // Convert Railway format to Npgsql connection string
+        var uri = new Uri(databaseUrl);
+        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={uri.UserInfo.Split(':')[0]};Password={uri.UserInfo.Split(':')[1]};SSL Mode=Require;Trust Server Certificate=true";
+        Console.WriteLine($"Converted Railway DATABASE_URL to Npgsql format");
+    }
+    else
+    {
+        // Use as-is if already in correct format
+        connectionString = databaseUrl;
+    }
+
+    // Railway PostgreSQL connection - Production
     builder.Services.AddDbContext<AiNewsDbContext>(options =>
-        options.UseNpgsql(databaseUrl));
+        options.UseNpgsql(connectionString));
 
     Console.WriteLine("Using PostgreSQL from Railway DATABASE_URL");
 }
 else
 {
-    // SQLite for local development only
-    builder.Services.AddDbContext<AiNewsDbContext>(options =>
-        options.UseSqlite(connectionString));
-
-    Console.WriteLine("Using SQLite for local development");
+    // No database - use in-memory mock data only
+    Console.WriteLine("No DATABASE_URL found - running in mock-only mode");
 }
 
 // Register application services
@@ -92,59 +102,68 @@ app.MapHealthChecks("/health");
 // Simple health check endpoint for Railway
 app.MapGet("/", () => "LogicLoom AI News API is running!");
 
-// Ensure database is created and seed data
-try
+// Ensure database is created and seed data (only if database is configured)
+var useDatabase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DATABASE_URL"));
+
+if (useDatabase)
 {
-    using (var scope = app.Services.CreateScope())
+    try
     {
-        var context = scope.ServiceProvider.GetRequiredService<AiNewsDbContext>();
-
-        Console.WriteLine("Starting database initialization...");
-
-        // Create database and run migrations
-        await context.Database.EnsureCreatedAsync();
-        Console.WriteLine("Database created successfully");
-
-        // Only seed if we have no data
-        if (!await context.AIModels.AnyAsync())
+        using (var scope = app.Services.CreateScope())
         {
-            Console.WriteLine("Seeding AI models...");
-            var scraper = scope.ServiceProvider.GetRequiredService<IContentScraperService>();
-            var storage = scope.ServiceProvider.GetRequiredService<IDataStorageService>();
+            var context = scope.ServiceProvider.GetRequiredService<AiNewsDbContext>();
 
-            var models = await scraper.ScrapeModelReleasesAsync();
-            foreach (var model in models)
+            Console.WriteLine("Starting database initialization...");
+
+            // Create database and run migrations
+            await context.Database.EnsureCreatedAsync();
+            Console.WriteLine("Database created successfully");
+
+            // Only seed if we have no data
+            if (!await context.AIModels.AnyAsync())
             {
-                await storage.SaveModelAsync(model);
+                Console.WriteLine("Seeding AI models...");
+                var scraper = scope.ServiceProvider.GetRequiredService<IContentScraperService>();
+                var storage = scope.ServiceProvider.GetRequiredService<IDataStorageService>();
+
+                var models = await scraper.ScrapeModelReleasesAsync();
+                foreach (var model in models)
+                {
+                    await storage.SaveModelAsync(model);
+                }
+                Console.WriteLine($"Seeded {models.Count()} AI models");
             }
-            Console.WriteLine($"Seeded {models.Count()} AI models");
-        }
 
-        if (!await context.NewsArticles.AnyAsync())
-        {
-            Console.WriteLine("Seeding news articles...");
-            var scraper = scope.ServiceProvider.GetRequiredService<IContentScraperService>();
-            var processor = scope.ServiceProvider.GetRequiredService<IContentProcessingService>();
-            var storage = scope.ServiceProvider.GetRequiredService<IDataStorageService>();
-
-            var articles = await scraper.ScrapeLatestNewsAsync();
-            foreach (var article in articles)
+            if (!await context.NewsArticles.AnyAsync())
             {
-                var processedArticle = await processor.ProcessArticleAsync(article);
-                await storage.SaveArticleAsync(processedArticle);
-            }
-            Console.WriteLine($"Seeded {articles.Count()} news articles");
-        }
+                Console.WriteLine("Seeding news articles...");
+                var scraper = scope.ServiceProvider.GetRequiredService<IContentScraperService>();
+                var processor = scope.ServiceProvider.GetRequiredService<IContentProcessingService>();
+                var storage = scope.ServiceProvider.GetRequiredService<IDataStorageService>();
 
-        Console.WriteLine("Database initialization completed successfully");
+                var articles = await scraper.ScrapeLatestNewsAsync();
+                foreach (var article in articles)
+                {
+                    var processedArticle = await processor.ProcessArticleAsync(article);
+                    await storage.SaveArticleAsync(processedArticle);
+                }
+                Console.WriteLine($"Seeded {articles.Count()} news articles");
+            }
+
+            Console.WriteLine("Database initialization completed successfully");
+        }
+    }
+    catch (Exception ex)
+    {
+        // Log error but don't crash the app
+        Console.WriteLine($"Database initialization failed: {ex.Message}");
+        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        // Continue without seeded data - API will still work
     }
 }
-catch (Exception ex)
+else
 {
-    // Log error but don't crash the app
-    Console.WriteLine($"Database initialization failed: {ex.Message}");
-    Console.WriteLine($"Stack trace: {ex.StackTrace}");
-    // Continue without seeded data - API will still work
+    Console.WriteLine("Running in mock-only mode - no database persistence");
 }
 
 app.Run();
