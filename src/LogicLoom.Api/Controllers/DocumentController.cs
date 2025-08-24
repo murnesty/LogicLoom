@@ -173,12 +173,37 @@ public class DocumentController : ControllerBase
             PageSize = pagination.PageSize
         };
 
-        return Ok(new
+        // Convert to shared models and return DocumentView
+        var sharedNodes = nodes.Select(n => new LogicLoom.Shared.Models.DocumentNode
         {
-            DocumentId = documentId,
-            Nodes = nodes,
-            Relationships = relationships
+            Id = n.Id,
+            DocumentId = n.DocumentId,
+            Type = n.Type,
+            Content = n.Content,
+            Level = n.Level,
+            Position = n.Position,
+            StyleName = n.StyleName,
+            IsBold = n.IsBold,
+            IsItalic = n.IsItalic,
+            ListLevel = n.ListLevel,
+            ParentId = n.ParentId
         });
+
+        var sharedRelationships = relationships.Select(r => new LogicLoom.Shared.Models.NodeRelationship
+        {
+            Id = r.Id,
+            SourceNodeId = r.SourceNodeId,
+            TargetNodeId = r.TargetNodeId,
+            Type = r.Type
+        });
+
+        var documentView = new LogicLoom.Shared.Models.DocumentView(
+            documentId,
+            sharedNodes,
+            sharedRelationships
+        );
+
+        return Ok(documentView);
     }
 
     [HttpGet("search")]
