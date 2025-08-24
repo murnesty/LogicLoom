@@ -1,4 +1,5 @@
 using LogicLoom.AiNews.Core.Models;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 
 namespace LogicLoom.AiNews.UI.Client.Services;
@@ -7,10 +8,12 @@ public class AiNewsApiService
 {
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly string _apiBaseUrl;
 
-    public AiNewsApiService(HttpClient httpClient)
+    public AiNewsApiService(HttpClient httpClient, IConfiguration configuration)
     {
         _httpClient = httpClient;
+        _apiBaseUrl = configuration["ApiBaseUrl"] ?? "http://localhost:5282";
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -22,7 +25,7 @@ public class AiNewsApiService
     {
         try
         {
-            var response = await _httpClient.GetStringAsync($"http://localhost:5282/api/models/latest?count={count}");
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/models/latest?count={count}");
             return JsonSerializer.Deserialize<List<AIModel>>(response, _jsonOptions) ?? new List<AIModel>();
         }
         catch (Exception ex)
@@ -36,7 +39,7 @@ public class AiNewsApiService
     {
         try
         {
-            var response = await _httpClient.GetStringAsync($"http://localhost:5282/api/models/{id}");
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/models/{id}");
             return JsonSerializer.Deserialize<AIModel>(response, _jsonOptions);
         }
         catch (Exception ex)
@@ -51,7 +54,7 @@ public class AiNewsApiService
     {
         try
         {
-            var response = await _httpClient.GetStringAsync($"http://localhost:5282/api/news/latest?count={count}");
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/news/latest?count={count}");
             return JsonSerializer.Deserialize<List<NewsArticle>>(response, _jsonOptions) ?? new List<NewsArticle>();
         }
         catch (Exception ex)
@@ -65,7 +68,7 @@ public class AiNewsApiService
     {
         try
         {
-            var response = await _httpClient.GetStringAsync($"http://localhost:5282/api/news/trending?count={count}");
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/news/trending?count={count}");
             return JsonSerializer.Deserialize<List<NewsArticle>>(response, _jsonOptions) ?? new List<NewsArticle>();
         }
         catch (Exception ex)
@@ -80,7 +83,7 @@ public class AiNewsApiService
     {
         try
         {
-            var response = await _httpClient.GetStringAsync($"http://localhost:5282/api/benchmarks/mock/{modelId}");
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/benchmarks/mock/{modelId}");
             return JsonSerializer.Deserialize<object[]>(response, _jsonOptions) ?? Array.Empty<object>();
         }
         catch (Exception ex)
