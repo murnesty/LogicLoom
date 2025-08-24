@@ -1,6 +1,0 @@
-@LogicLoom.Identity_HostAddress = http://localhost:5200
-
-GET {{LogicLoom.Identity_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
