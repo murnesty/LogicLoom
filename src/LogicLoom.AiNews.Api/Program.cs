@@ -57,7 +57,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Don't redirect HTTPS in Railway (Railway handles SSL termination)
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
@@ -65,36 +70,47 @@ app.MapControllers();
 // Add health check endpoint
 app.MapHealthChecks("/health");
 
+// Simple health check endpoint for Railway
+app.MapGet("/", () => "LogicLoom AI News API is running!");
+
 // Ensure database is created and seed data
-using (var scope = app.Services.CreateScope())
+try
 {
-    var context = scope.ServiceProvider.GetRequiredService<AiNewsDbContext>();
-    var scraper = scope.ServiceProvider.GetRequiredService<IContentScraperService>();
-    var processor = scope.ServiceProvider.GetRequiredService<IContentProcessingService>();
-    var storage = scope.ServiceProvider.GetRequiredService<IDataStorageService>();
-
-    // Create database
-    context.Database.EnsureCreated();
-
-    // Seed data if empty
-    if (!context.AIModels.Any())
+    using (var scope = app.Services.CreateScope())
     {
-        var models = await scraper.ScrapeModelReleasesAsync();
-        foreach (var model in models)
+        var context = scope.ServiceProvider.GetRequiredService<AiNewsDbContext>();
+        var scraper = scope.ServiceProvider.GetRequiredService<IContentScraperService>();
+        var processor = scope.ServiceProvider.GetRequiredService<IContentProcessingService>();
+        var storage = scope.ServiceProvider.GetRequiredService<IDataStorageService>();
+
+        // Create database
+        await context.Database.EnsureCreatedAsync();
+
+        // Seed data if empty
+        if (!await context.AIModels.AnyAsync())
         {
-            await storage.SaveModelAsync(model);
+            var models = await scraper.ScrapeModelReleasesAsync();
+            foreach (var model in models)
+            {
+                await storage.SaveModelAsync(model);
+            }
+        }
+
+        if (!await context.NewsArticles.AnyAsync())
+        {
+            var articles = await scraper.ScrapeLatestNewsAsync();
+            foreach (var article in articles)
+            {
+                var processedArticle = await processor.ProcessArticleAsync(article);
+                await storage.SaveArticleAsync(processedArticle);
+            }
         }
     }
-
-    if (!context.NewsArticles.Any())
-    {
-        var articles = await scraper.ScrapeLatestNewsAsync();
-        foreach (var article in articles)
-        {
-            var processedArticle = await processor.ProcessArticleAsync(article);
-            await storage.SaveArticleAsync(processedArticle);
-        }
-    }
+}
+catch (Exception ex)
+{
+    // Log error but don't crash the app
+    Console.WriteLine($"Database seeding failed: {ex.Message}");
 }
 
 app.Run();
