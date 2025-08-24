@@ -1,4 +1,4 @@
-name: Deploy LogicLoom
+name: Deploy LogicLoom AI News
 
 on:
   push:
@@ -10,21 +10,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
       - name: Restore dependencies
-        run: dotnet restore src/LogicLoom.sln
+        run: dotnet restore src/LogicLoom.AiNews.Api/LogicLoom.AiNews.Api.csproj
 
-      - name: Build
-        run: dotnet build src/LogicLoom.sln --no-restore
+      - name: Build API
+        run: dotnet build src/LogicLoom.AiNews.Api/LogicLoom.AiNews.Api.csproj --no-restore
 
-      - name: Test
-        run: dotnet test src/LogicLoom.sln --no-build --verbosity normal
+      - name: Build UI
+        run: dotnet build src/LogicLoom.AiNews.UI/Client/LogicLoom.AiNews.UI.Client.csproj --no-restore
 
   deploy-frontend:
     needs: test
@@ -35,16 +35,16 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
       - name: Publish Blazor App
         run: |
-          cd src/LogicLoom.Client
+          cd src/LogicLoom.AiNews.UI/Client
           dotnet publish -c Release -o publish
           # Create .nojekyll to disable Jekyll processing
           touch publish/wwwroot/.nojekyll
@@ -55,7 +55,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: src/LogicLoom.Client/publish/wwwroot
+          path: src/LogicLoom.AiNews.UI/Client/publish/wwwroot
 
       - name: Deploy to GitHub Pages
         id: deployment

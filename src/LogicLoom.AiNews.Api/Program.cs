@@ -14,13 +14,28 @@ builder.Services.AddSwaggerGen();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Data Source=ainews.db";
 
-builder.Services.AddDbContext<AiNewsDbContext>(options =>
-    options.UseSqlite(connectionString));
+// Check for Railway PostgreSQL
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (!string.IsNullOrEmpty(databaseUrl))
+{
+    // Railway PostgreSQL connection
+    builder.Services.AddDbContext<AiNewsDbContext>(options =>
+        options.UseNpgsql(databaseUrl));
+}
+else
+{
+    // SQLite for local development
+    builder.Services.AddDbContext<AiNewsDbContext>(options =>
+        options.UseSqlite(connectionString));
+}
 
 // Register application services
 builder.Services.AddScoped<IContentScraperService, MockContentScraperService>();
 builder.Services.AddScoped<IContentProcessingService, MockContentProcessingService>();
 builder.Services.AddScoped<IDataStorageService, DataStorageService>();
+
+// Add health checks
+builder.Services.AddHealthChecks();
 
 // Add CORS for development
 builder.Services.AddCors(options =>
@@ -46,6 +61,9 @@ app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
+
+// Add health check endpoint
+app.MapHealthChecks("/health");
 
 // Ensure database is created and seed data
 using (var scope = app.Services.CreateScope())
