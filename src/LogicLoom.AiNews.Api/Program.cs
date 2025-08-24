@@ -59,7 +59,8 @@ else
 }
 
 // Register application services
-builder.Services.AddScoped<IContentScraperService, MockContentScraperService>();
+builder.Services.AddHttpClient(); // Add HttpClient for RSS fetching
+builder.Services.AddScoped<IContentScraperService, RSSFeedService>(); // Use real RSS feeds
 builder.Services.AddScoped<IContentProcessingService, MockContentProcessingService>();
 builder.Services.AddScoped<IDataStorageService, DataStorageService>();
 
