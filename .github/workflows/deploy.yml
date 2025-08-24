@@ -46,6 +46,8 @@ jobs:
         run: |
           cd src/LogicLoom.Client
           dotnet publish -c Release -o publish
+          # Create .nojekyll to disable Jekyll processing
+          touch publish/wwwroot/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
