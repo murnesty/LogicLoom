@@ -92,4 +92,85 @@ public class AiNewsApiService
             return Array.Empty<object>();
         }
     }
+
+    // Admin functionality for data refresh
+    public async Task<AdminStatus> GetAdminStatusAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetStringAsync($"{_apiBaseUrl}/api/admin/status");
+            return JsonSerializer.Deserialize<AdminStatus>(response, _jsonOptions) ?? new AdminStatus();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching admin status: {ex.Message}");
+            return new AdminStatus { Error = ex.Message };
+        }
+    }
+
+    public async Task<RefreshResult> RefreshLiveDataAsync()
+    {
+        try
+        {
+            // First reset the database
+            var resetResponse = await _httpClient.PostAsync($"{_apiBaseUrl}/api/admin/reset-database?confirm=YES_DELETE_ALL", null);
+            if (!resetResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await resetResponse.Content.ReadAsStringAsync();
+                return new RefreshResult { Success = false, Message = $"Reset failed: {errorContent}" };
+            }
+
+            // Then refresh with live data
+            var refreshResponse = await _httpClient.PostAsync($"{_apiBaseUrl}/api/admin/refresh-data", null);
+            if (!refreshResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await refreshResponse.Content.ReadAsStringAsync();
+                return new RefreshResult { Success = false, Message = $"Refresh failed: {errorContent}" };
+            }
+
+            var responseContent = await refreshResponse.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<RefreshDataResponse>(responseContent, _jsonOptions);
+            
+            return new RefreshResult 
+            { 
+                Success = true, 
+                Message = $"✅ Successfully refreshed! News: {result?.NewsArticles ?? 0}, Models: {result?.AIModels ?? 0}",
+                NewsArticles = result?.NewsArticles ?? 0,
+                AIModels = result?.AIModels ?? 0,
+                Errors = result?.Errors ?? new List<string>()
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error refreshing data: {ex.Message}");
+            return new RefreshResult { Success = false, Message = $"❌ Error: {ex.Message}" };
+        }
+    }
+}
+
+// DTOs for admin functionality
+public class AdminStatus
+{
+    public int NewsCount { get; set; }
+    public int ModelsCount { get; set; }
+    public object? LatestNews { get; set; }
+    public object? LatestModel { get; set; }
+    public DateTime Timestamp { get; set; }
+    public string? Error { get; set; }
+}
+
+public class RefreshResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = "";
+    public int NewsArticles { get; set; }
+    public int AIModels { get; set; }
+    public List<string> Errors { get; set; } = new();
+}
+
+public class RefreshDataResponse
+{
+    public int NewsArticles { get; set; }
+    public int AIModels { get; set; }
+    public List<string> Errors { get; set; } = new();
 }

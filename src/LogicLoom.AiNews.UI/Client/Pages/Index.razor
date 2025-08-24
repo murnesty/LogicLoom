@@ -8,8 +8,32 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12 mb-4">
-            <h1 class="display-4">🤖 AI News Dashboard</h1>
-            <p class="lead">Latest developments in artificial intelligence models and research</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-4">🤖 AI News Dashboard</h1>
+                    <p class="lead">Latest developments in artificial intelligence models and research</p>
+                </div>
+                <div class="text-end">
+                    <button class="btn btn-primary btn-lg" @onclick="RefreshLiveData" disabled="@isRefreshing">
+                        @if (isRefreshing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span>Refreshing...</span>
+                        }
+                        else
+                        {
+                            <i class="oi oi-reload me-2"></i>
+                            <span>🔄 Refresh Live Data</span>
+                        }
+                    </button>
+                    @if (!string.IsNullOrEmpty(refreshMessage))
+                    {
+                        <div class="alert alert-@(refreshSuccess ? "success" : "danger") mt-2 mb-0" role="alert">
+                            @refreshMessage
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 
@@ -172,8 +196,16 @@
 @code {
     private List<AIModel>? models;
     private List<NewsArticle>? trendingNews;
+    private bool isRefreshing = false;
+    private string? refreshMessage;
+    private bool refreshSuccess = false;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
     {
         try
         {
@@ -191,6 +223,56 @@
             Console.WriteLine($"Error loading dashboard data: {ex.Message}");
             models = new List<AIModel>();
             trendingNews = new List<NewsArticle>();
+        }
+    }
+
+    private async Task RefreshLiveData()
+    {
+        isRefreshing = true;
+        refreshMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            // Clear current data
+            models = null;
+            trendingNews = null;
+            StateHasChanged();
+
+            // Call admin refresh endpoint
+            var result = await ApiService.RefreshLiveDataAsync();
+            
+            refreshSuccess = result.Success;
+            refreshMessage = result.Message;
+
+            if (result.Success)
+            {
+                // Reload the dashboard data
+                await LoadDashboardData();
+                
+                if (result.Errors.Any())
+                {
+                    refreshMessage += $"\n⚠️ Some warnings: {string.Join(", ", result.Errors.Take(2))}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            refreshSuccess = false;
+            refreshMessage = $"❌ Error refreshing data: {ex.Message}";
+            Console.WriteLine($"Error in refresh: {ex.Message}");
+        }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+            
+            // Clear message after 10 seconds
+            _ = Task.Delay(10000).ContinueWith(_ => 
+            {
+                refreshMessage = null;
+                InvokeAsync(StateHasChanged);
+            });
         }
     }
 }
