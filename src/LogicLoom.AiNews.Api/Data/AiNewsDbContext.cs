@@ -27,6 +27,12 @@ public class AiNewsDbContext : DbContext
                 .HasConversion(
                     v => string.Join(',', v),
                     v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList());
+            
+            // Configure DateTime properties for PostgreSQL
+            entity.Property(e => e.ReleaseDate)
+                .HasColumnType("timestamp without time zone");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone");
         });
 
         // NewsArticle configuration
@@ -42,6 +48,12 @@ public class AiNewsDbContext : DbContext
                 .HasConversion(
                     v => string.Join(',', v),
                     v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList());
+            
+            // Configure DateTime properties for PostgreSQL
+            entity.Property(e => e.PublishDate)
+                .HasColumnType("timestamp without time zone");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone");
         });
 
         // Benchmark configuration

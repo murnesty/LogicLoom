@@ -18,7 +18,7 @@ public class MockContentScraperService : IContentScraperService
                 Content = "OpenAI has released GPT-4o, a new version of their flagship model that brings significant improvements in multimodal processing. The model can now handle text, images, audio, and video inputs simultaneously, offering 50% cost reduction compared to GPT-4. Key features include real-time voice interaction, improved reasoning capabilities, and reduced hallucinations. The model demonstrates superior performance across various benchmarks while maintaining the safety standards expected from OpenAI's systems.",
                 Source = "OpenAI Blog",
                 SourceUrl = "https://openai.com/blog/gpt-4o-announcement",
-                PublishDate = DateTime.Now.AddDays(-2),
+                PublishDate = DateTime.UtcNow.AddDays(-2),
                 Category = "Model Release",
                 Summary = "OpenAI releases GPT-4o with multimodal capabilities and 50% cost reduction",
                 Tags = new List<string> { "OpenAI", "GPT-4o", "Multimodal", "Cost Reduction" }
@@ -29,7 +29,7 @@ public class MockContentScraperService : IContentScraperService
                 Content = "Anthropic has announced Claude 3.5 Sonnet, which shows remarkable improvements in code generation and analysis tasks. The model features a 200K context window and enhanced safety measures through constitutional AI. Benchmark results show significant improvements in coding tasks, with particular strength in debugging and code explanation. The model also introduces artifact creation capabilities, allowing users to generate and modify code snippets interactively.",
                 Source = "Anthropic Blog",
                 SourceUrl = "https://anthropic.com/blog/claude-3-5-sonnet",
-                PublishDate = DateTime.Now.AddDays(-5),
+                PublishDate = DateTime.UtcNow.AddDays(-5),
                 Category = "Model Release",
                 Summary = "Claude 3.5 Sonnet shows improvements in code generation with 200K context window",
                 Tags = new List<string> { "Anthropic", "Claude", "Code Generation", "Safety" }
@@ -40,7 +40,7 @@ public class MockContentScraperService : IContentScraperService
                 Content = "DeepSeek has released V2.5 of their open-source language model, demonstrating competitive performance against proprietary solutions at a fraction of the cost. The model utilizes a Mixture of Experts (MoE) architecture and shows particular strength in mathematics and coding tasks. Being open-source, it allows for customization and self-hosting, making it an attractive option for organizations concerned about data privacy and costs.",
                 Source = "DeepSeek Research",
                 SourceUrl = "https://deepseek.com/blog/v2-5-release",
-                PublishDate = DateTime.Now.AddDays(-7),
+                PublishDate = DateTime.UtcNow.AddDays(-7),
                 Category = "Research",
                 Summary = "DeepSeek V2.5 offers competitive open-source alternative with strong STEM capabilities",
                 Tags = new List<string> { "DeepSeek", "Open Source", "Mathematics", "MoE" }
@@ -51,7 +51,7 @@ public class MockContentScraperService : IContentScraperService
                 Content = "Google has unveiled Gemini 2.0, featuring an unprecedented 2 million token context window that enables processing of extremely long documents and conversations. The model maintains Google's focus on factual accuracy and integrates seamlessly with Google's ecosystem of services. Native multimodal architecture allows for sophisticated reasoning across different input types, making it particularly effective for research and analysis tasks.",
                 Source = "Google AI Blog",
                 SourceUrl = "https://ai.googleblog.com/gemini-2-0-announcement",
-                PublishDate = DateTime.Now.AddDays(-10),
+                PublishDate = DateTime.UtcNow.AddDays(-10),
                 Category = "Model Release",
                 Summary = "Gemini 2.0 features 2M token context window and native multimodal architecture",
                 Tags = new List<string> { "Google", "Gemini", "Context Window", "Multimodal" }
@@ -71,7 +71,7 @@ public class MockContentScraperService : IContentScraperService
                 Name = "GPT-4o",
                 Version = "4o",
                 Company = "OpenAI",
-                ReleaseDate = new DateTime(2024, 5, 15),
+                ReleaseDate = new DateTime(2024, 5, 15, 0, 0, 0, DateTimeKind.Utc),
                 Description = "Multimodal AI model with text, image, audio, and video capabilities",
                 Capabilities = new List<string> { "Text Generation", "Image Analysis", "Audio Processing", "Video Understanding", "Code Generation" },
                 ContextWindow = "128K tokens",
@@ -83,7 +83,7 @@ public class MockContentScraperService : IContentScraperService
                 Name = "Claude 3.5 Sonnet",
                 Version = "3.5",
                 Company = "Anthropic",
-                ReleaseDate = new DateTime(2024, 6, 20),
+                ReleaseDate = new DateTime(2024, 6, 20, 0, 0, 0, DateTimeKind.Utc),
                 Description = "Advanced language model with enhanced safety and code generation capabilities",
                 Capabilities = new List<string> { "Text Generation", "Code Generation", "Analysis", "Creative Writing", "Safety Reasoning" },
                 ContextWindow = "200K tokens",
@@ -95,7 +95,7 @@ public class MockContentScraperService : IContentScraperService
                 Name = "DeepSeek V2.5",
                 Version = "2.5",
                 Company = "DeepSeek",
-                ReleaseDate = new DateTime(2024, 9, 10),
+                ReleaseDate = new DateTime(2024, 7, 10, 0, 0, 0, DateTimeKind.Utc), // Changed from September to July
                 Description = "Open-source MoE model with strong mathematics and coding capabilities",
                 Capabilities = new List<string> { "Text Generation", "Mathematics", "Code Generation", "Scientific Reasoning" },
                 ContextWindow = "64K tokens",
@@ -107,7 +107,7 @@ public class MockContentScraperService : IContentScraperService
                 Name = "Gemini 2.0",
                 Version = "2.0",
                 Company = "Google",
-                ReleaseDate = new DateTime(2024, 12, 1),
+                ReleaseDate = new DateTime(2024, 8, 1, 0, 0, 0, DateTimeKind.Utc), // Changed from December to August
                 Description = "Native multimodal model with massive context window",
                 Capabilities = new List<string> { "Text Generation", "Image Analysis", "Document Processing", "Research", "Factual Reasoning" },
                 ContextWindow = "2M tokens",
