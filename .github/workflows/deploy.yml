@@ -57,6 +57,8 @@ jobs:
           dotnet restore src/LogicLoom.AiNews.UI/Client/LogicLoom.AiNews.UI.Client.csproj
           cd src/LogicLoom.AiNews.UI/Client
           dotnet publish -c Release -o publish
+          # Fix base href for GitHub Pages
+          sed -i 's|<base href="/" />|<base href="/LogicLoom/" />|g' publish/wwwroot/index.html
           # Create .nojekyll to disable Jekyll processing
           touch publish/wwwroot/.nojekyll
 
