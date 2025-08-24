@@ -22,10 +22,17 @@ if (useDatabase)
     {
         // Convert Railway DATABASE_URL to Npgsql connection string
         var uri = new Uri(databaseUrl);
-        var userInfo = uri.UserInfo.Split(':');
+        var userInfo = uri.UserInfo?.Split(':');
 
-        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
-        Console.WriteLine("Converted Railway DATABASE_URL to Npgsql format");
+        if (userInfo != null && userInfo.Length >= 2)
+        {
+            connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
+            Console.WriteLine("Converted Railway DATABASE_URL to Npgsql format");
+        }
+        else
+        {
+            throw new InvalidOperationException("Invalid DATABASE_URL format - missing username or password");
+        }
     }
     else
     {
@@ -87,9 +94,9 @@ app.UseCors();
 // Add CORS headers for debugging
 app.Use(async (context, next) =>
 {
-    context.Response.Headers.Add("Access-Control-Allow-Origin", "https://murnesty.github.io");
-    context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    context.Response.Headers["Access-Control-Allow-Origin"] = "https://murnesty.github.io";
+    context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
     await next();
 });
 
@@ -103,8 +110,6 @@ app.MapHealthChecks("/health");
 app.MapGet("/", () => "LogicLoom AI News API is running!");
 
 // Ensure database is created and seed data (only if database is configured)
-var useDatabase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DATABASE_URL"));
-
 if (useDatabase)
 {
     try
