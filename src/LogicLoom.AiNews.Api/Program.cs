@@ -40,9 +40,9 @@ builder.Services.AddHealthChecks();
 // Add CORS for development and production
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(builder =>
+    options.AddDefaultPolicy(policy =>
     {
-        builder.WithOrigins(
+        policy.WithOrigins(
                 "http://localhost:5173",           // Local Blazor dev
                 "http://localhost:5000",           // Local Blazor alt port
                 "https://murnesty.github.io"       // GitHub Pages
@@ -69,6 +69,16 @@ if (!app.Environment.IsProduction())
 }
 
 app.UseCors();
+
+// Add CORS headers for debugging
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("Access-Control-Allow-Origin", "https://murnesty.github.io");
+    context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    await next();
+});
+
 app.UseAuthorization();
 app.MapControllers();
 
