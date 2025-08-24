@@ -28,11 +28,23 @@ public class AiNewsDbContext : DbContext
                     v => string.Join(',', v),
                     v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList());
 
-            // Configure DateTime properties for PostgreSQL
-            entity.Property(e => e.ReleaseDate)
-                .HasColumnType("timestamp with time zone");
-            entity.Property(e => e.CreatedAt)
-                .HasColumnType("timestamp with time zone");
+            // Configure DateTime properties based on database provider
+            if (Database.IsNpgsql())
+            {
+                // PostgreSQL: Use timestamp with time zone for UTC DateTime
+                entity.Property(e => e.ReleaseDate)
+                    .HasColumnType("timestamp with time zone");
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("timestamp with time zone");
+            }
+            else
+            {
+                // In-Memory/Other: Use default datetime handling
+                entity.Property(e => e.ReleaseDate)
+                    .HasColumnType("datetime");
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("datetime");
+            }
         });
 
         // NewsArticle configuration
@@ -49,11 +61,23 @@ public class AiNewsDbContext : DbContext
                     v => string.Join(',', v),
                     v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList());
 
-            // Configure DateTime properties for PostgreSQL
-            entity.Property(e => e.PublishDate)
-                .HasColumnType("timestamp with time zone");
-            entity.Property(e => e.CreatedAt)
-                .HasColumnType("timestamp with time zone");
+            // Configure DateTime properties based on database provider
+            if (Database.IsNpgsql())
+            {
+                // PostgreSQL: Use timestamp with time zone for UTC DateTime
+                entity.Property(e => e.PublishDate)
+                    .HasColumnType("timestamp with time zone");
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("timestamp with time zone");
+            }
+            else
+            {
+                // SQLite: Use default datetime handling
+                entity.Property(e => e.PublishDate)
+                    .HasColumnType("datetime");
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("datetime");
+            }
         });
 
         // Benchmark configuration
