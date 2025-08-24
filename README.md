@@ -1,5 +1,7 @@
 # LogicLoom - WordML Document Analyzer
 
+> **🚀 Live Demo**: [Frontend](https://murnesty.github.io/LogicLoom/) | [API](https://logicloom-production.up.railway.app/health)
+
 A hobby-scale microservice architecture project built in C# that analyzes Word documents using WordML, extracts structural relationships, and visualizes document hierarchies through an interactive UI.
 
 ## 🎯 Project Overview
