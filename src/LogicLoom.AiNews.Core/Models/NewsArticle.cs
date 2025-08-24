@@ -11,5 +11,5 @@ public class NewsArticle
     public string Category { get; set; } = string.Empty;
     public string Summary { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
 }

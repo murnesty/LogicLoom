@@ -12,5 +12,5 @@ public class AIModel
     public string ContextWindow { get; set; } = string.Empty;
     public string Pricing { get; set; } = string.Empty;
     public bool IsMultimodal { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
 }

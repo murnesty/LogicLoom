@@ -32,6 +32,8 @@ public class DataStorageService : IDataStorageService
     {
         if (model.Id == 0)
         {
+            // Set CreatedAt for new models
+            model.CreatedAt = DateTime.UtcNow;
             _context.AIModels.Add(model);
         }
         else
@@ -61,6 +63,8 @@ public class DataStorageService : IDataStorageService
     {
         if (article.Id == 0)
         {
+            // Set CreatedAt for new articles
+            article.CreatedAt = DateTime.UtcNow;
             _context.NewsArticles.Add(article);
         }
         else

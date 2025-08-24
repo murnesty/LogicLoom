@@ -41,7 +41,10 @@ if (useDatabase)
     }
 
     builder.Services.AddDbContext<AiNewsDbContext>(options =>
-        options.UseNpgsql(connectionString));
+        options.UseNpgsql(connectionString, npgsqlOptions =>
+        {
+            npgsqlOptions.EnableRetryOnFailure();
+        }));
 
     Console.WriteLine("Using PostgreSQL from Railway DATABASE_URL");
 }
@@ -132,11 +135,21 @@ if (useDatabase)
                 var storage = scope.ServiceProvider.GetRequiredService<IDataStorageService>();
 
                 var models = await scraper.ScrapeModelReleasesAsync();
+                int successCount = 0;
                 foreach (var model in models)
                 {
-                    await storage.SaveModelAsync(model);
+                    try
+                    {
+                        await storage.SaveModelAsync(model);
+                        successCount++;
+                        Console.WriteLine($"Successfully saved model: {model.Name}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to save model {model.Name}: {ex.Message}");
+                    }
                 }
-                Console.WriteLine($"Seeded {models.Count()} AI models");
+                Console.WriteLine($"Seeded {successCount} AI models");
             }
 
             if (!await context.NewsArticles.AnyAsync())
@@ -147,12 +160,22 @@ if (useDatabase)
                 var storage = scope.ServiceProvider.GetRequiredService<IDataStorageService>();
 
                 var articles = await scraper.ScrapeLatestNewsAsync();
+                int successCount = 0;
                 foreach (var article in articles)
                 {
-                    var processedArticle = await processor.ProcessArticleAsync(article);
-                    await storage.SaveArticleAsync(processedArticle);
+                    try
+                    {
+                        var processedArticle = await processor.ProcessArticleAsync(article);
+                        await storage.SaveArticleAsync(processedArticle);
+                        successCount++;
+                        Console.WriteLine($"Successfully saved article: {article.Title}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to save article {article.Title}: {ex.Message}");
+                    }
                 }
-                Console.WriteLine($"Seeded {articles.Count()} news articles");
+                Console.WriteLine($"Seeded {successCount} news articles");
             }
 
             Console.WriteLine("Database initialization completed successfully");
