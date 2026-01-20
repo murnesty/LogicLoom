@@ -1,2 +1,15 @@
-[variables]
-NIXPACKS_CSHARP_SDK_VERSION = "8.0"
+# Disable auto-detection, use explicit .NET 8
+providers = []
+
+[phases.setup]
+nixPkgs = ["dotnet-sdk_8"]
+
+[phases.build]
+cmds = [
+  "dotnet restore ReceiptCalculator.Api.csproj",
+  "dotnet publish ReceiptCalculator.Api.csproj -c Release -o out"
+]
+
+[start]
+cmd = "dotnet out/ReceiptCalculator.Api.dll"
+
