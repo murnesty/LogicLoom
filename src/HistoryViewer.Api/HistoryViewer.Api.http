@@ -1,0 +1,6 @@
+@HistoryViewer.Api_HostAddress = http://localhost:5217
+
+GET {{HistoryViewer.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,76 @@
+name: Deploy Frontends to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Build History Viewer
+      - name: Install dependencies (history-viewer)
+        working-directory: frontend/history-viewer
+        run: npm install
+
+      - name: Build (history-viewer)
+        working-directory: frontend/history-viewer
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.HISTORY_VIEWER_API_URL }}
+
+      # Build Receipt Calculator
+      - name: Install dependencies (receipt-calculator)
+        working-directory: frontend/receipt-calculator
+        run: npm install
+
+      - name: Build (receipt-calculator)
+        working-directory: frontend/receipt-calculator
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.RECEIPT_CALCULATOR_API_URL }}
+
+      # Combine builds into single pages folder
+      - name: Prepare Pages
+        run: |
+          mkdir -p _site/history-viewer
+          mkdir -p _site/receipt-calculator
+          cp -r frontend/history-viewer/dist/* _site/history-viewer/
+          cp -r frontend/receipt-calculator/dist/* _site/receipt-calculator/
+          cp frontend/index.html _site/index.html
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

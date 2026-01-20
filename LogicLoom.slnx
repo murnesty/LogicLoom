@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/HistoryViewer.Api/HistoryViewer.Api.csproj" />
+    <Project Path="src/ReceiptCalculator.Api/ReceiptCalculator.Api.csproj" />
+    <Project Path="src/Shared.Contracts/Shared.Contracts.csproj" />
+  </Folder>
+</Solution>
