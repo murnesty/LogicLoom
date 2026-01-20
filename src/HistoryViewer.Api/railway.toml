@@ -1,6 +1,9 @@
 [build]
 builder = "nixpacks"
 
+[build.args]
+NIXPACKS_CSHARP_SDK_VERSION = "8.0"
+
 [deploy]
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
