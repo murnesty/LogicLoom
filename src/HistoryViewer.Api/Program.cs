@@ -1,6 +1,12 @@
+
 using Microsoft.EntityFrameworkCore;
 using HistoryViewer.Api.Infrastructure;
 using HistoryViewer.Api.DTOs;
+using Npgsql;
+
+
+// Enable dynamic JSON serialization for Npgsql (required for Dictionary<string, string> to jsonb)
+NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 
 var builder = WebApplication.CreateBuilder(args);
 
