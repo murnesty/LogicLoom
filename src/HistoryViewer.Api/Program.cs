@@ -32,18 +32,29 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 // Initialize database and seed data
-using (var scope = app.Services.CreateScope())
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<HistoryDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    
+    logger.LogInformation("Starting database initialization...");
     db.Database.EnsureCreated();
+    logger.LogInformation("Database created/verified successfully");
+    
     ChineseHistorySeeder.Seed(db);
+    logger.LogInformation("Database seeding completed successfully");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Database initialization failed: {ex.Message}");
+    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    throw;
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Enable Swagger in all environments for debugging
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors();
 
