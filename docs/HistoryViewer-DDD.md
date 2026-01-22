@@ -1685,3 +1685,348 @@ GET  /api/military-systems/{id}            # Full system with units, tactics
 - [ ] Comments/contributions
 - [ ] Additional languages (Japanese, Korean, etc.)
 
+---
+
+## 11. Frontend Architecture
+
+### 11.1 Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| **React 18** | UI framework |
+| **TypeScript** | Type safety |
+| **Vite** | Build tool (fast HMR) |
+| **Tailwind CSS** | Styling |
+| **React Leaflet** | Map component |
+| **Zustand** | State management |
+| **React Query (TanStack)** | Data fetching & caching |
+| **React Router** | Navigation |
+
+### 11.2 Pages (3 Pages)
+
+```
+/                    → Home (Map + Timeline view)
+/event/{id}          → Event Detail page
+/figure/{id}         → Historical Figure page
+```
+
+### 11.3 Layout Structure
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                           App Layout                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                      <Header />                              │   │
+│  │  [🏛️ Logo]  [🔍 Search]  [Filters ▼]  [🌐 EN/中文]         │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                      <MainContent />                         │   │
+│  │  ┌─────────────────────────────────┐ ┌───────────────────┐  │   │
+│  │  │                                 │ │                   │  │   │
+│  │  │         <MapView />             │ │  <Sidebar />      │  │   │
+│  │  │                                 │ │  (Event/Figure    │  │   │
+│  │  │    📍 Event markers             │ │   details when    │  │   │
+│  │  │    🗺️ Territory overlays        │ │   selected)       │  │   │
+│  │  │                                 │ │                   │  │   │
+│  │  └─────────────────────────────────┘ └───────────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    <TimelineSlider />                        │   │
+│  │  -500 ══════●━━━━━━━━━●════════════════════════════ 1912    │   │
+│  │  [秦] [汉]     [隋][唐]    [宋]  [元] [明]  [清]             │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### 11.4 Components Breakdown
+
+#### Core Layout Components (4)
+
+| Component | Description |
+|-----------|-------------|
+| `<AppLayout />` | Main layout wrapper |
+| `<Header />` | Logo, search, filters, language toggle |
+| `<Sidebar />` | Slide-out panel for event/figure details |
+| `<TimelineSlider />` | Year range selector with era visualization |
+
+#### Map Components (4)
+
+| Component | Description |
+|-----------|-------------|
+| `<MapView />` | Main Leaflet map container |
+| `<EventMarker />` | Clickable marker for events (size by significance) |
+| `<TerritoryOverlay />` | GeoJSON polygon for dynasty territories |
+| `<EraLegend />` | Color legend for dynasties |
+
+#### Event Components (3)
+
+| Component | Description |
+|-----------|-------------|
+| `<EventCard />` | Summary card in list/sidebar |
+| `<EventDetail />` | Full event details page/panel |
+| `<RelatedEvents />` | List of related events |
+
+#### Figure Components (3)
+
+| Component | Description |
+|-----------|-------------|
+| `<FigureCard />` | Avatar + name card |
+| `<FigureDetail />` | Full biography page/panel |
+| `<FigureTimeline />` | Events this figure participated in |
+
+#### UI Components (5)
+
+| Component | Description |
+|-----------|-------------|
+| `<LanguageToggle />` | EN / 中文 switcher |
+| `<CategoryFilter />` | War, Political, Cultural, etc. |
+| `<YearDisplay />` | Formats year (221 BC / 公元前221年) |
+| `<SignificanceBadge />` | Star rating display |
+| `<LoadingSpinner />` | Loading state |
+
+### 11.5 Project File Structure
+
+```
+src/HistoryViewer.Web/
+├── public/
+│   └── index.html
+├── src/
+│   ├── api/                      # API client
+│   │   ├── client.ts             # Axios/fetch setup
+│   │   ├── eras.ts               # Era API calls
+│   │   ├── events.ts             # Event API calls
+│   │   ├── figures.ts            # Figure API calls
+│   │   └── types.ts              # TypeScript types (from DTOs)
+│   │
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── AppLayout.tsx
+│   │   │   ├── Header.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   └── TimelineSlider.tsx
+│   │   │
+│   │   ├── map/
+│   │   │   ├── MapView.tsx
+│   │   │   ├── EventMarker.tsx
+│   │   │   ├── TerritoryOverlay.tsx
+│   │   │   └── EraLegend.tsx
+│   │   │
+│   │   ├── event/
+│   │   │   ├── EventCard.tsx
+│   │   │   ├── EventDetail.tsx
+│   │   │   └── RelatedEvents.tsx
+│   │   │
+│   │   ├── figure/
+│   │   │   ├── FigureCard.tsx
+│   │   │   ├── FigureDetail.tsx
+│   │   │   └── FigureTimeline.tsx
+│   │   │
+│   │   └── ui/
+│   │       ├── LanguageToggle.tsx
+│   │       ├── CategoryFilter.tsx
+│   │       ├── YearDisplay.tsx
+│   │       ├── SignificanceBadge.tsx
+│   │       └── LoadingSpinner.tsx
+│   │
+│   ├── hooks/
+│   │   ├── useTimeline.ts        # Timeline data & year selection
+│   │   ├── useLanguage.ts        # i18n context
+│   │   └── useMapBounds.ts       # Track visible map area
+│   │
+│   ├── pages/
+│   │   ├── HomePage.tsx          # Map + Timeline
+│   │   ├── EventPage.tsx         # /event/{id}
+│   │   └── FigurePage.tsx        # /figure/{id}
+│   │
+│   ├── store/
+│   │   └── appStore.ts           # Zustand state
+│   │
+│   ├── styles/
+│   │   └── globals.css           # Tailwind + custom CSS
+│   │
+│   ├── App.tsx
+│   └── main.tsx
+│
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── tailwind.config.js
+```
+
+### 11.6 Data Flow
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        User Interactions                          │
+└──────────────────────────────────────────────────────────────────┘
+                               │
+        ┌──────────────────────┼──────────────────────┐
+        ▼                      ▼                      ▼
+┌───────────────┐    ┌─────────────────┐    ┌───────────────────┐
+│ Drag Timeline │    │ Click Marker    │    │ Change Language   │
+│ (year change) │    │ (select event)  │    │ (EN ↔ 中文)       │
+└───────┬───────┘    └────────┬────────┘    └─────────┬─────────┘
+        │                     │                       │
+        ▼                     ▼                       ▼
+┌───────────────────────────────────────────────────────────────────┐
+│                     App State (Zustand)                            │
+│  - selectedYear: -221                                              │
+│  - selectedEvent: Guid | null                                      │
+│  - language: 'en' | 'zh'                                          │
+│  - filters: { category: [], civilization: 'chinese' }             │
+└───────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌───────────────────────────────────────────────────────────────────┐
+│                    React Query (TanStack)                          │
+│  GET /api/timeline?startYear=-500&endYear=1912&lang=zh            │
+│  GET /api/events/{id}?lang=zh                                     │
+│  GET /api/territories?year=-221&civilization=chinese               │
+└───────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌───────────────────────────────────────────────────────────────────┐
+│                      UI Updates                                    │
+│  - Map markers refresh                                             │
+│  - Territory polygons update                                       │
+│  - Sidebar shows event details                                     │
+│  - All text switches language                                      │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+### 11.7 TypeScript Types (from Backend DTOs)
+
+```typescript
+// types.ts - Matches backend DTOs
+
+export interface EraDto {
+  id: string;
+  name: string;
+  startYear: number;
+  endYear: number;
+  civilization: string;
+  color: string | null;
+  eventCount: number;
+}
+
+export interface EventSummaryDto {
+  id: string;
+  title: string;
+  year: number;
+  lat: number;
+  lng: number;
+  category: string;
+  significance: number;
+  thumbnailUrl: string | null;
+  eraName: string | null;
+  eraColor: string | null;
+}
+
+export interface EventDetailDto {
+  id: string;
+  title: string;
+  description: string | null;
+  startYear: number;
+  endYear: number | null;
+  datePrecision: string;
+  location: GeoPointDto;
+  category: string;
+  significance: number;
+  imageUrl: string | null;
+  sourceUrl: string | null;
+  era: EraDto | null;
+  figures: FigureSummaryDto[];
+  tags: string[];
+  relatedEvents: EventSummaryDto[];
+}
+
+export interface FigureSummaryDto {
+  id: string;
+  name: string;
+  role: string | null;
+  portraitUrl: string | null;
+}
+
+export interface FigureDetailDto {
+  id: string;
+  name: string;
+  biography: string | null;
+  birthYear: number | null;
+  deathYear: number | null;
+  birthPlace: GeoPointDto | null;
+  portraitUrl: string | null;
+  roles: FigureRoleDto[];
+  events: EventSummaryDto[];
+}
+
+export interface GeoPointDto {
+  lat: number;
+  lng: number;
+}
+
+export interface TimelineResponse {
+  eras: EraDto[];
+  events: EventSummaryDto[];
+}
+
+export type EventCategory = 
+  | 'War' 
+  | 'Political' 
+  | 'Cultural' 
+  | 'Scientific' 
+  | 'Religious' 
+  | 'Diplomatic' 
+  | 'Construction';
+
+export type Language = 'en' | 'zh' | 'zh-tw';
+```
+
+### 11.8 Component Count Summary
+
+| Category | Count |
+|----------|-------|
+| Pages | 3 |
+| Layout Components | 4 |
+| Map Components | 4 |
+| Event Components | 3 |
+| Figure Components | 3 |
+| UI Components | 5 |
+| Custom Hooks | 3 |
+| **Total** | **25** |
+
+### 11.9 MVP Priority (Phase 1 Frontend)
+
+#### Must Have (Core MVP)
+
+| Component | Priority |
+|-----------|----------|
+| `HomePage` with Map | P0 |
+| `MapView` + `EventMarker` | P0 |
+| `TimelineSlider` | P0 |
+| `Sidebar` + `EventDetail` | P0 |
+| `LanguageToggle` (EN/中文) | P0 |
+| `EraLegend` | P0 |
+| `Header` (basic) | P0 |
+
+#### Nice to Have (Phase 2)
+
+| Component | Priority |
+|-----------|----------|
+| `TerritoryOverlay` | P1 |
+| `CategoryFilter` | P1 |
+| `FigureDetail` page | P1 |
+| Search functionality | P1 |
+| Mobile responsive | P1 |
+
+#### Future (Phase 3)
+
+| Component | Priority |
+|-----------|----------|
+| Animations/transitions | P2 |
+| Keyboard navigation | P2 |
+| Share functionality | P2 |
+| Offline support (PWA) | P2 |
+

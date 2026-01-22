@@ -1,0 +1,79 @@
+.era-legend {
+  background: rgba(26, 26, 46, 0.95);
+  border-radius: 12px;
+  padding: 1rem;
+  color: white;
+  max-width: 280px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.era-legend-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f5af19;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.era-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.era-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.era-legend-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.era-legend-item.selected {
+  background: rgba(245, 175, 25, 0.2);
+  border: 1px solid rgba(245, 175, 25, 0.5);
+}
+
+.era-color-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.era-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.era-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.era-years {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.era-event-count {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+}

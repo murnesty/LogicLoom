@@ -1,0 +1,146 @@
+.history-map {
+  position: relative;
+  flex-grow: 1;
+  background: #1a2633;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.map-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.china-outline {
+  transition: fill 0.3s ease;
+}
+
+.river {
+  stroke-linecap: round;
+}
+
+.map-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.map-marker {
+  position: absolute;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  animation: markerPulse 2s ease-in-out infinite;
+}
+
+.map-marker:hover {
+  transform: translate(-50%, -50%) scale(1.2) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  z-index: 99 !important;
+}
+
+.map-marker.selected {
+  box-shadow: 0 0 0 4px rgba(245, 175, 25, 0.6), 0 4px 16px rgba(0, 0, 0, 0.5);
+  animation: none;
+}
+
+@keyframes markerPulse {
+  0%, 100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.marker-icon {
+  font-size: 0.7em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.map-legend {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  background: rgba(26, 26, 46, 0.9);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.legend-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f5af19;
+  margin-bottom: 0.5rem;
+}
+
+.legend-items {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.25rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+}
+
+.legend-icon {
+  font-size: 0.85rem;
+}
+
+.legend-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.map-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1rem;
+}
+
+/* Zoom controls placeholder */
+.map-controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.map-control-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(26, 26, 46, 0.9);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.map-control-btn:hover {
+  background: rgba(26, 26, 46, 1);
+}

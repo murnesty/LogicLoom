@@ -1,0 +1,123 @@
+.timeline-slider {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 1rem 1.5rem;
+  color: white;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.timeline-title {
+  font-weight: 600;
+  color: #f5af19;
+}
+
+.timeline-selected-range {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.timeline-track-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.timeline-year-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  min-width: 60px;
+}
+
+.timeline-year-label:last-child {
+  text-align: right;
+}
+
+.timeline-track {
+  flex-grow: 1;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline-era-bar {
+  position: absolute;
+  top: 4px;
+  height: calc(100% - 8px);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.timeline-era-bar:hover {
+  opacity: 1;
+}
+
+.timeline-era-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+.timeline-selection {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(245, 175, 25, 0.3);
+  border: 2px solid #f5af19;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.timeline-handle {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 32px;
+  background: #f5af19;
+  border-radius: 4px;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  z-index: 10;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-handle:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(245, 175, 25, 0.4);
+}
+
+.timeline-handle:active {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+.timeline-handle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+}
