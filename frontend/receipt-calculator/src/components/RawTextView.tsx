@@ -5,6 +5,14 @@ const COOLDOWN_SECONDS = 30;
 const SESSION_CAP = 10;
 const SESSION_KEY = 'gv_ocr_count';
 
+/** Session cap + cooldown only in production (hosted); off on Vite dev and localhost. */
+function isGoogleOcrLimitsEnabled(): boolean {
+  if (import.meta.env.DEV) return false;
+  if (typeof window === 'undefined') return true;
+  const h = window.location.hostname;
+  return h !== 'localhost' && h !== '127.0.0.1';
+}
+
 interface RawTextViewProps {
   rawText: string;
   onRawTextChange: (text: string) => void;
@@ -42,8 +50,12 @@ export default function RawTextView({
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const showComparison = googleText !== null;
+  const limitsEnabled = isGoogleOcrLimitsEnabled();
   const sessionCount = getSessionCount();
-  const canCallGoogle = googleVisionService && !scanning && cooldown === 0 && sessionCount < SESSION_CAP;
+  const canCallGoogle =
+    googleVisionService &&
+    !scanning &&
+    (!limitsEnabled || (cooldown === 0 && sessionCount < SESSION_CAP));
 
   const startCooldown = useCallback(() => {
     setCooldown(COOLDOWN_SECONDS);
@@ -76,8 +88,10 @@ export default function RawTextView({
         setScanStatus(status);
       });
       setGoogleText(result.text);
-      incrementSessionCount();
-      startCooldown();
+      if (limitsEnabled) {
+        incrementSessionCount();
+        startCooldown();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google Vision OCR failed');
     } finally {
@@ -92,6 +106,12 @@ export default function RawTextView({
 
   const remainingCalls = SESSION_CAP - sessionCount;
 
+  const googleButtonLabel = scanning
+    ? scanStatus || 'Scanning...'
+    : limitsEnabled && cooldown > 0
+      ? `Try again in ${cooldown}s`
+      : 'Try Better OCR (Google)';
+
   return (
     <div className="raw-text-section">
       <p className="section-hint">
@@ -105,15 +125,15 @@ export default function RawTextView({
             onClick={handleGoogleScan}
             disabled={!canCallGoogle || uploadedFiles.length === 0}
           >
-            {scanning
-              ? scanStatus || 'Scanning...'
-              : cooldown > 0
-                ? `Try again in ${cooldown}s`
-                : `Try Better OCR (Google)`}
+            {googleButtonLabel}
           </button>
-          <span className="google-ocr-meta">
-            {remainingCalls} / {SESSION_CAP} uses left this session
-          </span>
+          {limitsEnabled ? (
+            <span className="google-ocr-meta">
+              {remainingCalls} / {SESSION_CAP} uses left this session
+            </span>
+          ) : (
+            <span className="google-ocr-meta google-ocr-meta-dev">Dev: no session cap or cooldown</span>
+          )}
           {error && <p className="google-ocr-error">{error}</p>}
         </div>
       )}

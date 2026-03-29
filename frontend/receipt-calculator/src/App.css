@@ -378,6 +378,10 @@
   color: #999;
 }
 
+.google-ocr-meta-dev {
+  color: #7a9;
+}
+
 .google-ocr-error {
   color: #d32f2f;
   font-size: 0.8rem;
