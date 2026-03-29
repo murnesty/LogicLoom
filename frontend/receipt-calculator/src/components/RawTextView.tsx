@@ -81,7 +81,7 @@ export default function RawTextView({
 
     setScanning(true);
     setError('');
-    setScanStatus('Sending to Google Vision...');
+    setScanStatus('Running enhanced OCR...');
 
     try {
       const result = await googleVisionService.recognizeImages(uploadedFiles, (_p, status) => {
@@ -93,7 +93,7 @@ export default function RawTextView({
         startCooldown();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Google Vision OCR failed');
+      setError(err instanceof Error ? err.message : 'Enhanced OCR failed');
     } finally {
       setScanning(false);
       setScanStatus('');
@@ -110,7 +110,7 @@ export default function RawTextView({
     ? scanStatus || 'Scanning...'
     : limitsEnabled && cooldown > 0
       ? `Try again in ${cooldown}s`
-      : 'Try Better OCR (Google)';
+      : 'Try enhanced OCR';
 
   return (
     <div className="raw-text-section">
@@ -143,7 +143,7 @@ export default function RawTextView({
           <div className="ocr-compare">
             <div className="ocr-compare-panel">
               <div className="ocr-compare-header">
-                <h4>Tesseract (local)</h4>
+                <h4>Default</h4>
                 <button className="btn btn-use" onClick={() => handleUseAndParse(rawText)}>
                   Use & Parse →
                 </button>
@@ -157,7 +157,7 @@ export default function RawTextView({
             </div>
             <div className="ocr-compare-panel">
               <div className="ocr-compare-header">
-                <h4>Google Vision</h4>
+                <h4>Enhanced</h4>
                 <button className="btn btn-use btn-use-google" onClick={() => handleUseAndParse(googleText!)}>
                   Use & Parse →
                 </button>

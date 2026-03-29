@@ -80,15 +80,16 @@ export default function AppFooter() {
         </div>
       )}
       {supportUrl && (
-        <p className="app-footer-support">
-          <a href={supportUrl} target="_blank" rel="noopener noreferrer">
-            Support this project
-          </a>
-          <span className="app-footer-note">
-            {' '}
-            — Free to use. Optional Google Vision uses your API quota when you choose it.
-          </span>
-        </p>
+        <>
+          <p className="app-footer-support">
+            <a href={supportUrl} target="_blank" rel="noopener noreferrer">
+              Support this project
+            </a>
+          </p>
+          <p className="app-footer-support-hint">
+            Please consider supporting — it helps cover hosting costs.
+          </p>
+        </>
       )}
     </footer>
   );

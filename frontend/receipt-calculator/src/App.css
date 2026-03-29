@@ -60,9 +60,12 @@
   text-decoration: underline;
 }
 
-.app-footer-note {
+.app-footer-support-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
   color: #888;
-  font-weight: 400;
+  text-align: center;
+  line-height: 1.4;
 }
 
 /* ---- Step Indicator ---- */
@@ -379,7 +382,7 @@
   box-sizing: border-box;
 }
 
-/* ---- Google OCR Bar ---- */
+/* ---- Enhanced OCR bar (optional cloud OCR) ---- */
 
 .google-ocr-bar {
   display: flex;

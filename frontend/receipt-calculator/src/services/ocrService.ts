@@ -63,7 +63,7 @@ class GoogleVisionOcrService implements OcrService {
     const texts: string[] = [];
 
     for (let i = 0; i < totalFiles; i++) {
-      onProgress?.(i / totalFiles, `Sending image ${i + 1} of ${totalFiles} to Google Vision...`);
+      onProgress?.(i / totalFiles, `Processing image ${i + 1} of ${totalFiles}...`);
 
       const base64 = await fileToBase64(files[i]);
 
@@ -83,7 +83,7 @@ class GoogleVisionOcrService implements OcrService {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `Google Vision API error: ${response.status}`);
+        throw new Error(err?.error?.message || `Enhanced OCR request failed (${response.status})`);
       }
 
       const data = await response.json();
