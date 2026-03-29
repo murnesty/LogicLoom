@@ -7,6 +7,7 @@ import ImageUpload from './components/ImageUpload';
 import RawTextView from './components/RawTextView';
 import ReceiptEditor from './components/ReceiptEditor';
 import BillSplitter from './components/BillSplitter';
+import AppFooter from './components/AppFooter';
 import './App.css';
 
 const emptyReceipt: Receipt = {
@@ -137,6 +138,8 @@ function App() {
           </div>
         )}
       </main>
+
+      <AppFooter />
     </div>
   );
 }

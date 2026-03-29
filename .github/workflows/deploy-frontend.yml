@@ -50,6 +50,9 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.RECEIPT_CALCULATOR_API_URL }}
           VITE_GOOGLE_VISION_API_KEY: ${{ vars.GOOGLE_VISION_API_KEY }}
+          VITE_SUPPORT_URL: ${{ vars.RECEIPT_CALC_SUPPORT_URL }}
+          VITE_ADSENSE_CLIENT: ${{ vars.RECEIPT_CALC_ADSENSE_CLIENT }}
+          VITE_ADSENSE_SLOT: ${{ vars.RECEIPT_CALC_ADSENSE_SLOT }}
 
       # Combine builds into single pages folder
       - name: Prepare Pages

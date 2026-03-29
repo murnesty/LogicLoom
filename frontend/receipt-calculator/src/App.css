@@ -27,6 +27,44 @@
   flex-direction: column;
 }
 
+/* ---- App footer (optional support + ads) ---- */
+
+.app-footer {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #dde;
+  flex-shrink: 0;
+}
+
+.app-footer-ad {
+  max-width: 728px;
+  margin: 0 auto 1rem;
+  min-height: 90px;
+  overflow: hidden;
+}
+
+.app-footer-support {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #666;
+  text-align: center;
+}
+
+.app-footer-support a {
+  color: #4361ee;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.app-footer-support a:hover {
+  text-decoration: underline;
+}
+
+.app-footer-note {
+  color: #888;
+  font-weight: 400;
+}
+
 /* ---- Step Indicator ---- */
 
 .step-indicator {
