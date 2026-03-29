@@ -3,8 +3,14 @@ using ReceiptCalculator.Api.DTOs;
 using ReceiptCalculator.Api.Domain.Services;
 using ReceiptCalculator.Api.Infrastructure.Ocr;
 using ReceiptCalculator.Api.Infrastructure.Parsing;
+using Microsoft.Extensions.Options;
+using ReceiptCalculator.Api.Infrastructure.Vision;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<VisionOptions>(builder.Configuration.GetSection(VisionOptions.SectionName));
+builder.Services.AddSingleton<SqliteVisionUsageLimiter>();
+builder.Services.AddHttpClient<GoogleVisionDocumentClient>();
 
 // Add CORS for frontend
 builder.Services.AddCors(options =>
@@ -103,5 +109,79 @@ app.MapPost("/api/receipt/analyze-test", (
 .WithName("AnalyzeReceiptTest")
 .Accepts<AnalyzeReceiptTextRequestDto>("application/json")
 .Produces<AnalyzeReceiptResponseDto>(StatusCodes.Status200OK);
+
+app.MapPost("/api/vision/document-text", async (
+    VisionDocumentTextRequestDto request,
+    SqliteVisionUsageLimiter limiter,
+    GoogleVisionDocumentClient vision,
+    IOptions<VisionOptions> visionOptions,
+    CancellationToken cancellationToken) =>
+{
+    var opt = visionOptions.Value;
+    if (string.IsNullOrWhiteSpace(opt.ApiKey))
+    {
+        return Results.Json(
+            new { error = "Vision proxy is not configured (missing server API key)." },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    var images = request.Images ?? new List<string>();
+    images = images.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+    if (images.Count == 0)
+        return Results.BadRequest(new { error = "At least one base64 image is required." });
+
+    if (images.Count > opt.MaxImagesPerRequest)
+    {
+        return Results.BadRequest(new
+        {
+            error = $"At most {opt.MaxImagesPerRequest} images per request.",
+        });
+    }
+
+    var consume = images.Count;
+    var quota = await limiter.TryConsumeAsync(consume, cancellationToken);
+    if (!quota.Allowed)
+    {
+        var err = quota.BlockedBy == "monthly"
+            ? "Monthly enhanced OCR limit reached for this server (UTC calendar month)."
+            : "Daily enhanced OCR limit reached for this server (UTC).";
+        return Results.Json(
+            new
+            {
+                error = err,
+                blockedBy = quota.BlockedBy,
+                scansUsedToday = quota.ScansUsedToday,
+                dailyLimit = quota.DailyLimit,
+                scansUsedThisMonth = quota.ScansUsedThisMonth,
+                monthlyLimit = quota.MonthlyLimit,
+            },
+            statusCode: StatusCodes.Status429TooManyRequests);
+    }
+
+    try
+    {
+        var text = await vision.AnnotateDocumentsAsync(images, cancellationToken);
+        return Results.Ok(new VisionDocumentTextResponseDto
+        {
+            Text = text,
+            ScansUsedToday = quota.ScansUsedToday,
+            DailyLimit = quota.DailyLimit,
+            ScansUsedThisMonth = quota.ScansUsedThisMonth,
+            MonthlyLimit = quota.MonthlyLimit,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(
+            new { error = ex.Message },
+            statusCode: StatusCodes.Status502BadGateway);
+    }
+})
+.WithTags("Vision")
+.WithName("VisionDocumentText")
+.Accepts<VisionDocumentTextRequestDto>("application/json")
+.Produces<VisionDocumentTextResponseDto>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status429TooManyRequests)
+.Produces(StatusCodes.Status502BadGateway);
 
 app.Run();

@@ -49,7 +49,8 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: ${{ vars.RECEIPT_CALCULATOR_API_URL }}
-          VITE_GOOGLE_VISION_API_KEY: ${{ vars.GOOGLE_VISION_API_KEY }}
+          # Enhanced OCR: same Railway host as ReceiptCalculator.Api — key stays on server only.
+          VITE_VISION_PROXY_URL: ${{ vars.RECEIPT_CALCULATOR_API_URL }}
           VITE_SUPPORT_URL: ${{ vars.RECEIPT_CALC_SUPPORT_URL }}
           VITE_ADSENSE_CLIENT: ${{ vars.RECEIPT_CALC_ADSENSE_CLIENT }}
           VITE_ADSENSE_SLOT: ${{ vars.RECEIPT_CALC_ADSENSE_SLOT }}

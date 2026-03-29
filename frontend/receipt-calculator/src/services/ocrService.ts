@@ -5,9 +5,7 @@ export interface OcrResult {
   confidence: number;
 }
 
-export interface OcrProgressCallback {
-  (progress: number, status: string): void;
-}
+export type OcrProgressCallback = (progress: number, status: string) => void;
 
 export interface OcrService {
   recognizeImages(files: File[], onProgress?: OcrProgressCallback): Promise<OcrResult>;
@@ -55,45 +53,36 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-class GoogleVisionOcrService implements OcrService {
-  constructor(private apiKey: string) {}
+/**
+ * Enhanced OCR always goes through ReceiptCalculator.Api `POST /api/vision/document-text`
+ * (local and production). Google key + quotas live on the server only.
+ */
+class ProxiedVisionOcrService implements OcrService {
+  constructor(private baseUrl: string) {}
 
   async recognizeImages(files: File[], onProgress?: OcrProgressCallback): Promise<OcrResult> {
+    const base64s: string[] = [];
     const totalFiles = files.length;
-    const texts: string[] = [];
-
     for (let i = 0; i < totalFiles; i++) {
-      onProgress?.(i / totalFiles, `Processing image ${i + 1} of ${totalFiles}...`);
+      onProgress?.(i / totalFiles, `Preparing image ${i + 1} of ${totalFiles}...`);
+      base64s.push(await fileToBase64(files[i]));
+    }
 
-      const base64 = await fileToBase64(files[i]);
+    const url = `${this.baseUrl}/api/vision/document-text`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images: base64s }),
+    });
 
-      const response = await fetch(
-        `https://vision.googleapis.com/v1/images:annotate?key=${this.apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            requests: [{
-              image: { content: base64 },
-              features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
-            }],
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `Enhanced OCR request failed (${response.status})`);
-      }
-
-      const data = await response.json();
-      const annotation = data.responses?.[0]?.fullTextAnnotation?.text ?? '';
-      texts.push(annotation.trim());
+    const data = (await res.json().catch(() => ({}))) as { error?: string; text?: string };
+    if (!res.ok) {
+      throw new Error(data.error || `Enhanced OCR proxy failed (${res.status})`);
     }
 
     onProgress?.(1, 'Done');
     return {
-      text: texts.join('\n\n'),
+      text: (data.text ?? '').trim(),
       confidence: 95,
     };
   }
@@ -103,12 +92,13 @@ export function createOcrService(): OcrService {
   return new TesseractOcrService();
 }
 
+/** Returns null if `VITE_VISION_PROXY_URL` is unset (same for local and prod). */
 export function createGoogleVisionOcrService(): OcrService | null {
-  const apiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
-  if (!apiKey) return null;
-  return new GoogleVisionOcrService(apiKey);
+  const proxy = (import.meta.env.VITE_VISION_PROXY_URL as string | undefined)?.trim().replace(/\/$/, '');
+  if (!proxy) return null;
+  return new ProxiedVisionOcrService(proxy);
 }
 
 export function isGoogleVisionAvailable(): boolean {
-  return !!import.meta.env.VITE_GOOGLE_VISION_API_KEY;
+  return !!((import.meta.env.VITE_VISION_PROXY_URL as string | undefined)?.trim());
 }

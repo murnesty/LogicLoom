@@ -148,6 +148,8 @@ HISTORY_VIEWER_API_URL = https://historyviewer-api-production.up.railway.app
 RECEIPT_CALCULATOR_API_URL = https://receiptcalculator-api-production.up.railway.app
 ```
 
+Enhanced OCR uses only `VITE_VISION_PROXY_URL` (workflow sets it from `RECEIPT_CALCULATOR_API_URL`). The Google key is **never** in the frontend — set `Vision__ApiKey` on Railway (or user-secrets locally).
+
 ### Step 2: Use API URL in Frontend
 
 The workflow passes these as build-time environment variables via `VITE_API_URL`.
@@ -174,7 +176,9 @@ VITE_API_URL=http://localhost:5001
 
 # frontend/receipt-calculator/.env.local
 VITE_API_URL=http://localhost:5002
+VITE_VISION_PROXY_URL=https://localhost:7002
 ```
+(Use the same HTTPS/HTTP and port as `ReceiptCalculator.Api` `launchSettings.json`; Vision key only in `dotnet user-secrets` / Railway, not here.)
 
 ---
 

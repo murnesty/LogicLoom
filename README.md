@@ -64,8 +64,8 @@ npm run dev
 
 ## Environment Variables
 
-### Frontend
-- `VITE_API_URL` - Backend API URL (set in GitHub repo variables for deployment)
+### Frontend (GitHub Actions → build)
+- `RECEIPT_CALCULATOR_API_URL` / `HISTORY_VIEWER_API_URL` — repo **Variables** (public URLs). Receipt build sets `VITE_VISION_PROXY_URL` from the receipt API URL. Enhanced OCR is **proxy-only**; Google key is only on the server (`Vision__ApiKey` on Railway or user-secrets locally).
 
 ## Documentation
 

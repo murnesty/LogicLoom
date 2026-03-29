@@ -49,6 +49,10 @@ dist-ssr/
 .DS_Store
 Thumbs.db
 
+# ReceiptCalculator.Api — SQLite daily Vision scan counter (local / server)
+**/vision-usage.db
+src/ReceiptCalculator.Api/Data/
+
 # Test results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*

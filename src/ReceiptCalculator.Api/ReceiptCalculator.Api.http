@@ -14,3 +14,13 @@ Content-Type: application/json
 }
 
 ###
+
+# Vision proxy: base64 in images[]. Limits: Vision:DailyScanLimit (UTC day) + Vision:MonthlyScanLimit (UTC yyyy-MM). Vision:ApiKey required.
+POST {{ReceiptCalculator.Api_HostAddress}}/api/vision/document-text
+Content-Type: application/json
+
+{
+  "images": []
+}
+
+###

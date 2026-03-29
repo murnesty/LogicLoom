@@ -1,22 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { OcrService } from '../services/ocrService';
 import type { OcrComparisonPair } from '../types';
 
 function initialEnhancedToGoogleState(v: string | null | undefined): string | null {
   if (v == null || v === '') return null;
   return v;
-}
-
-const COOLDOWN_SECONDS = 30;
-const SESSION_CAP = 10;
-const SESSION_KEY = 'gv_ocr_count';
-
-/** Session cap + cooldown only in production (hosted); off on Vite dev and localhost. */
-function isGoogleOcrLimitsEnabled(): boolean {
-  if (import.meta.env.DEV) return false;
-  if (typeof window === 'undefined') return true;
-  const h = window.location.hostname;
-  return h !== 'localhost' && h !== '127.0.0.1';
 }
 
 interface RawTextViewProps {
@@ -46,16 +34,6 @@ interface RawTextViewProps {
   onComparisonDismiss?: () => void;
 }
 
-function getSessionCount(): number {
-  return parseInt(sessionStorage.getItem(SESSION_KEY) || '0', 10);
-}
-
-function incrementSessionCount(): number {
-  const count = getSessionCount() + 1;
-  sessionStorage.setItem(SESSION_KEY, String(count));
-  return count;
-}
-
 export default function RawTextView({
   rawText,
   onRawTextChange,
@@ -82,40 +60,13 @@ export default function RawTextView({
   const [scanning, setScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState('');
   const [error, setError] = useState('');
-  const [cooldown, setCooldown] = useState(0);
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const showComparison = googleText !== null;
-  const limitsEnabled = isGoogleOcrLimitsEnabled();
-  const sessionCount = getSessionCount();
-  const canCallGoogle =
-    googleVisionService &&
-    !scanning &&
-    !resetDefaultOcrBusy &&
-    (!limitsEnabled || (cooldown === 0 && sessionCount < SESSION_CAP));
+  const canCallGoogle = googleVisionService && !scanning && !resetDefaultOcrBusy;
 
   const showOcrToolsRow = !showComparison && (onResetDefaultOcr || googleVisionService);
   const resetDefaultDisabled =
     resetDefaultOcrBusy || scanning || uploadedFiles.length === 0;
-
-  const startCooldown = useCallback(() => {
-    setCooldown(COOLDOWN_SECONDS);
-    cooldownRef.current = setInterval(() => {
-      setCooldown((prev) => {
-        if (prev <= 1) {
-          if (cooldownRef.current) clearInterval(cooldownRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (cooldownRef.current) clearInterval(cooldownRef.current);
-    };
-  }, []);
 
   const compareNonceSeen = useRef<number | undefined>(undefined);
   useEffect(() => {
@@ -141,10 +92,6 @@ export default function RawTextView({
         setScanStatus(status);
       });
       setGoogleText(result.text);
-      if (limitsEnabled) {
-        incrementSessionCount();
-        startCooldown();
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Enhanced OCR failed');
     } finally {
@@ -157,13 +104,7 @@ export default function RawTextView({
     onUseAndParse(text, comparisonPair);
   };
 
-  const remainingCalls = SESSION_CAP - sessionCount;
-
-  const googleButtonLabel = scanning
-    ? scanStatus || 'Scanning...'
-    : limitsEnabled && cooldown > 0
-      ? `Try again in ${cooldown}s`
-      : 'Try enhanced OCR';
+  const googleButtonLabel = scanning ? scanStatus || 'Scanning...' : 'Try enhanced OCR';
 
   return (
     <div className="raw-text-section">
@@ -196,13 +137,7 @@ export default function RawTextView({
           </div>
           {googleVisionService && (
             <p className="ocr-tool-group-meta">
-              {limitsEnabled ? (
-                <>
-                  {remainingCalls} / {SESSION_CAP} enhanced uses left this session
-                </>
-              ) : (
-                <>Dev: no enhanced OCR cap</>
-              )}
+              Enhanced OCR is sent to your ReceiptCalculator.Api (Google key and scan limits stay on the server).
             </p>
           )}
           {error && <p className="google-ocr-error">{error}</p>}
@@ -256,7 +191,7 @@ export default function RawTextView({
           </div>
           <div className={`btn-row${hideBackButton ? ' btn-row-end' : ''}`}>
             {!hideBackButton && (
-              <button className="btn btn-secondary" onClick={onBack}>
+              <button type="button" className="btn btn-secondary" onClick={onBack}>
                 {backButtonLabel}
               </button>
             )}
@@ -283,11 +218,12 @@ export default function RawTextView({
           />
           <div className={`btn-row${hideBackButton ? ' btn-row-end' : ''}`}>
             {!hideBackButton && (
-              <button className="btn btn-secondary" onClick={onBack}>
+              <button type="button" className="btn btn-secondary" onClick={onBack}>
                 {backButtonLabel}
               </button>
             )}
             <button
+              type="button"
               className="btn btn-primary"
               onClick={onParse}
               disabled={!rawText.trim()}
