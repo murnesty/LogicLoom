@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AppStep, Receipt, SplitItem } from './types';
-import { createOcrService } from './services/ocrService';
+import { createOcrService, createGoogleVisionOcrService } from './services/ocrService';
 import { parseReceiptText } from './services/receiptParser';
 import StepIndicator from './components/StepIndicator';
 import ImageUpload from './components/ImageUpload';
@@ -19,21 +19,31 @@ const emptyReceipt: Receipt = {
 
 function App() {
   const ocrService = useMemo(() => createOcrService(), []);
+  const googleVisionService = useMemo(() => createGoogleVisionOcrService(), []);
 
   const [step, setStep] = useState<AppStep>('upload');
   const [rawText, setRawText] = useState('');
   const [receipt, setReceipt] = useState<Receipt>(emptyReceipt);
   const [splitItems, setSplitItems] = useState<SplitItem[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
-  const handleScanComplete = (text: string, previews: string[]) => {
+  const handleScanComplete = (text: string, previews: string[], files: File[]) => {
     setRawText(text);
     setImagePreviews(previews);
+    setUploadedFiles(files);
     setStep('rawText');
   };
 
   const handleParse = () => {
     const parsed = parseReceiptText(rawText);
+    setReceipt(parsed);
+    setStep('editItems');
+  };
+
+  const handleUseAndParse = (text: string) => {
+    setRawText(text);
+    const parsed = parseReceiptText(text);
     setReceipt(parsed);
     setStep('editItems');
   };
@@ -56,6 +66,7 @@ function App() {
     setReceipt(emptyReceipt);
     setSplitItems([]);
     setImagePreviews([]);
+    setUploadedFiles([]);
   };
 
   const showSideImage = step !== 'upload' && imagePreviews.length > 0;
@@ -67,7 +78,10 @@ function App() {
           rawText={rawText}
           onRawTextChange={setRawText}
           onParse={handleParse}
+          onUseAndParse={handleUseAndParse}
           onBack={() => setStep('upload')}
+          uploadedFiles={uploadedFiles}
+          googleVisionService={googleVisionService}
         />
       )}
 

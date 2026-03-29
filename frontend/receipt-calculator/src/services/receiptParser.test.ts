@@ -422,4 +422,147 @@ ore`;
       expect(result.serviceChargePercent).toBe(0);
     });
   });
+
+  describe('ITK receipt - Google Vision format (multi-line prices)', () => {
+    const rawText = `IPOH TUCK KEE (SS15)
+ITK FABULOUS SDN BHD
+(CO.NO. 202101013336) (1413635-K)
+NO.19-G,JALAN SS15/4B,
+47500 SUBANG JAYA, SELANGOR.
+H/P: +6018-3994 180 /TEL: 03-56134516
+GUEST CHECK
+Table: 13
+PAX: 6
+Order:
+ORD0012
+Staff: KK
+Date: 28-01-2026
+Qty Item
+Amount
+1 芙蓉蛋饭 $2
+10.90
+Fu Yong Egg Rice S2
+1 涼茶热
+Herbal Tea Hot
+1 芙蓉蛋饭 S2
+10.90
+Fu Yong Egg Rice S2
+1
+涼茶热
+Herbal Tea Hot
+1 芙蓉蛋饭 $2
+10.90
+Fu Yong Egg Rice S2
+1
+涼茶冷
+Herbal Tea Cold
+1
+肉碎番茄豆腐汤泡饭 $3
+11.90
+1
+Mince Pk Tomato Sp Rice S3
+涼茶热
+Herbal Tea Hot
+1 肉碎番茄豆腐汤泡饭 S3
+1凉茶热
+Herbal Tea Hot
+Mince Pk Tomato Sp Rice S3
+1 肉番茄豆腐汤泡饭 $3
+11.90
+11.90
+Mince Pk Tomato Sp Rice S3
+1 涼茶热
+Herbal Tea Hot
+1 餐肉炒饭 S7
+14.90
+Luncheon Meat Rice S7
+1 涼茶冷
+Herbal Tea Cold
+Subtotal:
+Rounding Adj.
+TOTAL:
+83.30
+0.00
+83.30
+..... Printed By KK.....
+*** Thank you
+**
+Please come again
+POWERED BY WWW.SISPOS.COM.MY`;
+
+    it('should extract shop name', () => {
+      const result = parseReceiptText(rawText);
+      expect(result.shopName).toBe('IPOH TUCK KEE (SS15)');
+    });
+
+    it('should parse multi-line items (qty+name on one line, price on next)', () => {
+      const result = parseReceiptText(rawText);
+      // 7 food items on receipt, but 1 has no price in OCR output
+      expect(result.items.length).toBeGreaterThanOrEqual(6);
+    });
+
+    it('should use English names when available', () => {
+      const result = parseReceiptText(rawText);
+      const names = result.items.map((i) => i.name);
+      expect(names).toEqual(
+        expect.arrayContaining([
+          'Fu Yong Egg Rice S2',
+          'Mince Pk Tomato Sp Rice S3',
+          'Luncheon Meat Rice S7',
+        ])
+      );
+    });
+
+    it('should parse prices correctly from next-line format', () => {
+      const result = parseReceiptText(rawText);
+      const fuYongItems = result.items.filter((i) => i.name === 'Fu Yong Egg Rice S2');
+      expect(fuYongItems).toHaveLength(3);
+      fuYongItems.forEach((item) => {
+        expect(item.unitPrice).toBeCloseTo(10.90, 2);
+        expect(item.quantity).toBe(1);
+      });
+
+      const minceItems = result.items.filter((i) => i.name === 'Mince Pk Tomato Sp Rice S3');
+      expect(minceItems.length).toBeGreaterThanOrEqual(2);
+      minceItems.forEach((item) => {
+        expect(item.unitPrice).toBeCloseTo(11.90, 2);
+      });
+
+      const luncheon = result.items.find((i) => i.name === 'Luncheon Meat Rice S7');
+      expect(luncheon).toBeDefined();
+      expect(luncheon!.unitPrice).toBeCloseTo(14.90, 2);
+    });
+
+    it('should handle three-line split (qty alone, name next, price after)', () => {
+      // The OCR splits "1\n肉碎番茄豆腐汤泡饭 $3\n11.90" across three lines
+      const result = parseReceiptText(rawText);
+      const minceItems = result.items.filter((i) => i.name === 'Mince Pk Tomato Sp Rice S3');
+      expect(minceItems.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should not include drinks (no price) as items', () => {
+      const result = parseReceiptText(rawText);
+      const names = result.items.map((i) => i.name.toLowerCase());
+      names.forEach((name) => {
+        expect(name).not.toContain('herbal tea');
+        expect(name).not.toContain('涼茶');
+      });
+    });
+
+    it('should not include footer lines as items', () => {
+      const result = parseReceiptText(rawText);
+      const names = result.items.map((i) => i.name.toLowerCase());
+      names.forEach((name) => {
+        expect(name).not.toContain('subtotal');
+        expect(name).not.toContain('total');
+        expect(name).not.toContain('rounding');
+        expect(name).not.toContain('printed');
+      });
+    });
+
+    it('should calculate 0% tax (subtotal equals total)', () => {
+      const result = parseReceiptText(rawText);
+      expect(result.taxPercent).toBe(0);
+    });
+  });
 });

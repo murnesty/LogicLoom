@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 interface ImageUploadProps {
-  onScanComplete: (rawText: string, previews: string[]) => void;
+  onScanComplete: (rawText: string, previews: string[], files: File[]) => void;
   ocrService: { recognizeImages(files: File[], onProgress?: (progress: number, status: string) => void): Promise<{ text: string; confidence: number }> };
 }
 
@@ -50,7 +50,7 @@ export default function ImageUpload({ onScanComplete, ocrService }: ImageUploadP
         setProgress(Math.round(p * 100));
         setStatusText(status);
       });
-      onScanComplete(result.text, previews);
+      onScanComplete(result.text, previews, files);
     } catch {
       setStatusText('OCR failed. Please try again.');
       setScanning(false);

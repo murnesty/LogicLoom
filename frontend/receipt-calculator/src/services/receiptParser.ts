@@ -113,10 +113,99 @@ function extractItems(lines: string[]): ReceiptItem[] {
         }
       }
       items.push(result.item);
+      continue;
+    }
+
+    // Multi-line pattern: "qty name" on this line, standalone price on next line.
+    // Common in Google Vision OCR output where prices are on separate lines.
+    const multiResult = tryParseMultiLineItem(lines, i);
+    if (multiResult) {
+      items.push(multiResult.item);
+      i += multiResult.linesConsumed;
     }
   }
 
   return items;
+}
+
+/**
+ * Handle items where price is on a separate line (common with Google Vision OCR).
+ *
+ * Case 1 (two-line): qty+name on one line, price on next:
+ *   1 芙蓉蛋饭 $2
+ *   10.90
+ *   Fu Yong Egg Rice S2     ← English name (optional)
+ *
+ * Case 2 (three-line): qty alone, name on next line, price after that:
+ *   1
+ *   肉碎番茄豆腐汤泡饭 $3
+ *   11.90
+ *   Mince Pk Tomato Sp Rice S3  ← English name (optional)
+ */
+function tryParseMultiLineItem(
+  lines: string[],
+  index: number,
+): { item: ReceiptItem; linesConsumed: number } | null {
+  const line = fixOcrQtyPrefix(lines[index]);
+
+  // Case 1: "qty name" on same line, standalone price on next line
+  const qtyNameMatch = line.match(/^(\d+)\s+(.+)$/);
+  if (qtyNameMatch) {
+    const qty = parseInt(qtyNameMatch[1]);
+    const rawName = qtyNameMatch[2].trim();
+    if (qty > 0 && qty < 100 && !isFooterLine(rawName) && rawName.length >= 2) {
+      const priceIndex = index + 1;
+      if (priceIndex < lines.length) {
+        const priceMatch = lines[priceIndex].trim().match(/^(\d+\.\d{2})$/);
+        if (priceMatch) {
+          const price = parseFloat(priceMatch[1]);
+          if (price > 0) {
+            let name = cleanItemName(rawName);
+            const englishName = findEnglishName(lines, priceIndex + 1);
+            if (englishName) name = englishName;
+            return {
+              item: { id: nextId(), name, quantity: qty, unitPrice: price / qty },
+              linesConsumed: 1,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  // Case 2: standalone qty on this line, name on next, price on the line after
+  const standaloneQtyMatch = line.match(/^(\d+)$/);
+  if (standaloneQtyMatch) {
+    const qty = parseInt(standaloneQtyMatch[1]);
+    if (qty > 0 && qty < 100) {
+      const nameIndex = index + 1;
+      const priceIndex = index + 2;
+      if (priceIndex < lines.length) {
+        const nameLine = lines[nameIndex].trim();
+        const priceLine = lines[priceIndex].trim();
+        const priceMatch = priceLine.match(/^(\d+\.\d{2})$/);
+        if (
+          priceMatch &&
+          nameLine.length >= 2 &&
+          !isFooterLine(nameLine) &&
+          !/^\d+\.\d{2}$/.test(nameLine)
+        ) {
+          const price = parseFloat(priceMatch[1]);
+          if (price > 0) {
+            let name = cleanItemName(nameLine);
+            const englishName = findEnglishName(lines, priceIndex + 1);
+            if (englishName) name = englishName;
+            return {
+              item: { id: nextId(), name, quantity: qty, unitPrice: price / qty },
+              linesConsumed: 2,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
