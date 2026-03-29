@@ -1,10 +1,8 @@
 import { AppStep } from '../types';
 
 const STEPS: { key: AppStep; label: string }[] = [
-  { key: 'upload', label: 'Upload' },
-  { key: 'rawText', label: 'Review Text' },
-  { key: 'editItems', label: 'Edit Items' },
-  { key: 'split', label: 'Split Bill' },
+  { key: 'capture', label: 'Photo & text' },
+  { key: 'itemize', label: 'Split bill' },
 ];
 
 interface StepIndicatorProps {

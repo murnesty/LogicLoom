@@ -23,4 +23,11 @@ export interface SplitItem {
   sharedBy: number;
 }
 
-export type AppStep = 'upload' | 'rawText' | 'editItems' | 'split';
+/** Two-step flow: scan/review OCR text, then edit line items and split in one screen. */
+export type AppStep = 'capture' | 'itemize';
+
+/** Saved when user extracts from default vs enhanced comparison; used to restore side-by-side on back. */
+export interface OcrComparisonPair {
+  defaultText: string;
+  enhancedText: string;
+}

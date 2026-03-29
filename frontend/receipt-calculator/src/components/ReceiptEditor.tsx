@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Receipt, ReceiptItem } from '../types';
+import { amountToEditDraft, formatMoney } from '../utils/money';
 
 interface ReceiptEditorProps {
   receipt: Receipt;
@@ -14,12 +15,13 @@ function PriceInput({ value, onChange }: { value: number; onChange: (v: number) 
 
   const handleFocus = () => {
     setEditing(true);
-    setDraft(value.toFixed(2));
+    setDraft(amountToEditDraft(value));
   };
 
   const handleBlur = () => {
     setEditing(false);
-    onChange(parseFloat(draft) || 0);
+    const parsed = parseFloat(draft.replace(/,/g, ''));
+    onChange(Number.isFinite(parsed) ? parsed : 0);
   };
 
   return (
@@ -27,7 +29,7 @@ function PriceInput({ value, onChange }: { value: number; onChange: (v: number) 
       type="text"
       inputMode="decimal"
       className="input-num"
-      value={editing ? draft : value.toFixed(2)}
+      value={editing ? draft : formatMoney(value)}
       onFocus={handleFocus}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={handleBlur}
@@ -66,9 +68,8 @@ export default function ReceiptEditor({ receipt, onReceiptChange, onNext, onBack
 
   const subtotal = receipt.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
   const svcAmount = subtotal * (receipt.serviceChargePercent / 100);
-  const taxableAmount = subtotal + svcAmount;
-  const taxAmount = taxableAmount * (receipt.taxPercent / 100);
-  const total = taxableAmount + taxAmount;
+  const taxAmount = subtotal * (receipt.taxPercent / 100);
+  const total = subtotal + svcAmount + taxAmount;
 
   return (
     <div className="editor-section">
@@ -128,7 +129,7 @@ export default function ReceiptEditor({ receipt, onReceiptChange, onNext, onBack
                       onChange={(v) => updateItem(item.id, 'unitPrice', v)}
                     />
                   </td>
-                  <td className="cell-right">{lineTotal.toFixed(2)}</td>
+                  <td className="cell-right">{formatMoney(lineTotal)}</td>
                   <td>
                     <button className="btn-icon" onClick={() => removeItem(item.id)} title="Remove">
                       🗑
@@ -172,28 +173,30 @@ export default function ReceiptEditor({ receipt, onReceiptChange, onNext, onBack
       <div className="totals-box">
         <div className="total-row">
           <span>Subtotal</span>
-          <span>{subtotal.toFixed(2)}</span>
+          <span>{formatMoney(subtotal)}</span>
         </div>
         {receipt.serviceChargePercent > 0 && (
           <div className="total-row">
             <span>Service Charge ({receipt.serviceChargePercent}%)</span>
-            <span>{svcAmount.toFixed(2)}</span>
+            <span>{formatMoney(svcAmount)}</span>
           </div>
         )}
         {receipt.taxPercent > 0 && (
           <div className="total-row">
             <span>Tax ({receipt.taxPercent}%)</span>
-            <span>{taxAmount.toFixed(2)}</span>
+            <span>{formatMoney(taxAmount)}</span>
           </div>
         )}
         <div className="total-row total-grand">
           <span>Total</span>
-          <span>{total.toFixed(2)}</span>
+          <span>{formatMoney(total)}</span>
         </div>
       </div>
 
       <div className="btn-row">
-        <button className="btn btn-secondary" onClick={onBack}>← Back</button>
+        <button className="btn btn-secondary" onClick={onBack}>
+          ← Back
+        </button>
         <button
           className="btn btn-primary"
           onClick={onNext}

@@ -3,34 +3,77 @@ import { useState, useRef, useCallback } from 'react';
 interface ImageUploadProps {
   onScanComplete: (rawText: string, previews: string[], files: File[]) => void;
   ocrService: { recognizeImages(files: File[], onProgress?: (progress: number, status: string) => void): Promise<{ text: string; confidence: number }> };
+  /** Narrow sidebar layout (e.g. replace flow without leaving the step). */
+  compact?: boolean;
 }
 
-export default function ImageUpload({ onScanComplete, ocrService }: ImageUploadProps) {
+/** One receipt image per session; a new pick replaces the previous. Scan runs as soon as an image is chosen. */
+export default function ImageUpload({ onScanComplete, ocrService, compact = false }: ImageUploadProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
+  const [scanFailed, setScanFailed] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scanGenerationRef = useRef(0);
 
-  const addFiles = useCallback((newFiles: FileList | File[]) => {
-    const imageFiles = Array.from(newFiles).filter((f) => f.type.startsWith('image/'));
-    if (imageFiles.length === 0) return;
+  const runScan = useCallback(
+    async (scanFiles: File[], scanPreviews: string[]) => {
+      if (scanFiles.length === 0) return;
+      const gen = ++scanGenerationRef.current;
+      setScanning(true);
+      setProgress(0);
+      setStatusText('Initializing OCR...');
+      setScanFailed(false);
 
-    setFiles((prev) => [...prev, ...imageFiles]);
-    imageFiles.forEach((file) => {
+      try {
+        const result = await ocrService.recognizeImages(scanFiles, (p, status) => {
+          setProgress(Math.round(p * 100));
+          setStatusText(status);
+        });
+        if (gen !== scanGenerationRef.current) return;
+        onScanComplete(result.text, scanPreviews, scanFiles);
+      } catch {
+        if (gen !== scanGenerationRef.current) return;
+        setStatusText('OCR failed. Please try again.');
+        setScanFailed(true);
+      } finally {
+        if (gen === scanGenerationRef.current) {
+          setScanning(false);
+        }
+      }
+    },
+    [ocrService, onScanComplete],
+  );
+
+  const addFiles = useCallback(
+    (newFiles: FileList | File[]) => {
+      const imageFiles = Array.from(newFiles).filter((f) => f.type.startsWith('image/'));
+      if (imageFiles.length === 0) return;
+
+      const file = imageFiles[0];
+      setFiles([file]);
+      setScanFailed(false);
       const reader = new FileReader();
       reader.onload = (e) => {
-        setPreviews((prev) => [...prev, e.target?.result as string]);
+        const dataUrl = e.target?.result as string;
+        setPreviews([dataUrl]);
+        void runScan([file], [dataUrl]);
       };
       reader.readAsDataURL(file);
-    });
-  }, []);
+    },
+    [runScan],
+  );
 
   const removeFile = (index: number) => {
+    scanGenerationRef.current += 1;
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
+    setScanFailed(false);
+    setStatusText('');
+    setScanning(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -39,29 +82,21 @@ export default function ImageUpload({ onScanComplete, ocrService }: ImageUploadP
     addFiles(e.dataTransfer.files);
   };
 
-  const handleScan = async () => {
-    if (files.length === 0) return;
-    setScanning(true);
-    setProgress(0);
-    setStatusText('Initializing OCR...');
-
-    try {
-      const result = await ocrService.recognizeImages(files, (p, status) => {
-        setProgress(Math.round(p * 100));
-        setStatusText(status);
-      });
-      onScanComplete(result.text, previews, files);
-    } catch {
-      setStatusText('OCR failed. Please try again.');
-      setScanning(false);
-    }
+  const handleRetry = () => {
+    if (files.length === 0 || previews.length === 0) return;
+    void runScan(files, previews);
   };
 
   return (
-    <div className="upload-section">
+    <div className={`upload-section${compact ? ' upload-section--compact' : ''}`}>
       <div
-        className={`drop-zone ${dragOver ? 'drag-over' : ''}`}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        className={['drop-zone', compact ? 'drop-zone--compact' : '', dragOver ? 'drag-over' : '']
+          .filter(Boolean)
+          .join(' ')}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
@@ -70,14 +105,16 @@ export default function ImageUpload({ onScanComplete, ocrService }: ImageUploadP
           ref={inputRef}
           type="file"
           accept="image/*"
-          multiple
           hidden
-          onChange={(e) => e.target.files && addFiles(e.target.files)}
+          onChange={(e) => {
+            if (e.target.files) addFiles(e.target.files);
+            e.target.value = '';
+          }}
         />
         <div className="drop-zone-content">
           <span className="drop-icon">📷</span>
-          <p>Drag & drop receipt images here</p>
-          <p className="drop-hint">or click to browse</p>
+          <p>Drag & drop a receipt photo here</p>
+          <p className="drop-hint">or click to browse — we scan it right away (one image)</p>
         </div>
       </div>
 
@@ -85,10 +122,15 @@ export default function ImageUpload({ onScanComplete, ocrService }: ImageUploadP
         <div className="preview-grid">
           {previews.map((src, i) => (
             <div key={i} className="preview-item">
-              <img src={src} alt={`Receipt ${i + 1}`} />
+              <img src={src} alt="Receipt preview" />
               <button
+                type="button"
                 className="remove-btn"
-                onClick={(e) => { e.stopPropagation(); removeFile(i); }}
+                disabled={scanning}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeFile(i);
+                }}
                 title="Remove"
               >
                 ✕
@@ -103,17 +145,17 @@ export default function ImageUpload({ onScanComplete, ocrService }: ImageUploadP
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
-          <p className="progress-text">{statusText} ({progress}%)</p>
+          <p className="progress-text">
+            {statusText} ({progress}%)
+          </p>
         </div>
       )}
 
-      <button
-        className="btn btn-primary"
-        onClick={handleScan}
-        disabled={files.length === 0 || scanning}
-      >
-        {scanning ? 'Scanning...' : `Scan Receipt (${files.length} image${files.length !== 1 ? 's' : ''})`}
-      </button>
+      {scanFailed && files.length > 0 && !scanning && (
+        <button type="button" className="btn btn-secondary upload-retry-btn" onClick={handleRetry}>
+          Retry scan
+        </button>
+      )}
     </div>
   );
 }

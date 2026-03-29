@@ -1,4 +1,5 @@
 import { SplitItem } from '../types';
+import { formatMoney } from '../utils/money';
 
 interface BillSplitterProps {
   items: SplitItem[];
@@ -25,15 +26,15 @@ export default function BillSplitter({
     );
   };
 
-  // Markup multiplier: (1 + svc%) * (1 + tax%)
-  const multiplier = (1 + serviceChargePercent / 100) * (1 + taxPercent / 100);
+  // Svc % and tax % each on pre-fee unit price (additive, not stacked).
+  const multiplier = 1 + serviceChargePercent / 100 + taxPercent / 100;
 
   const selectedItems = items.filter((item) => item.selected);
   const yourSubtotal = selectedItems.reduce((sum, item) => {
     return sum + (item.unitPrice * item.yourQty) / item.sharedBy;
   }, 0);
   const yourSvc = yourSubtotal * (serviceChargePercent / 100);
-  const yourTax = (yourSubtotal + yourSvc) * (taxPercent / 100);
+  const yourTax = yourSubtotal * (taxPercent / 100);
   const yourTotal = yourSubtotal + yourSvc + yourTax;
 
   return (
@@ -84,11 +85,11 @@ export default function BillSplitter({
                     {item.name}
                     <span className="item-meta"> x{item.quantity}</span>
                   </td>
-                  <td className="cell-right">{item.unitPrice.toFixed(2)}</td>
+                  <td className="cell-right">{formatMoney(item.unitPrice)}</td>
                   {(serviceChargePercent > 0 || taxPercent > 0) && (
-                    <td className="cell-right cell-extra">{(unitAllIn - item.unitPrice).toFixed(2)}</td>
+                    <td className="cell-right cell-extra">{formatMoney(unitAllIn - item.unitPrice)}</td>
                   )}
-                  <td className="cell-right">{unitAllIn.toFixed(2)}</td>
+                  <td className="cell-right">{formatMoney(unitAllIn)}</td>
                   <td>
                     <div className="qty-stepper">
                       <button
@@ -122,7 +123,7 @@ export default function BillSplitter({
                     />
                   </td>
                   <td className="cell-right cell-cost">
-                    {item.selected ? myCost.toFixed(2) : '-'}
+                    {item.selected ? formatMoney(myCost) : '-'}
                   </td>
                 </tr>
               );
@@ -134,29 +135,33 @@ export default function BillSplitter({
       <div className="totals-box your-totals">
         <div className="total-row">
           <span>Your Subtotal</span>
-          <span>{yourSubtotal.toFixed(2)}</span>
+          <span>{formatMoney(yourSubtotal)}</span>
         </div>
         {serviceChargePercent > 0 && (
           <div className="total-row">
             <span>Your Svc Charge ({serviceChargePercent}%)</span>
-            <span>{yourSvc.toFixed(2)}</span>
+            <span>{formatMoney(yourSvc)}</span>
           </div>
         )}
         {taxPercent > 0 && (
           <div className="total-row">
             <span>Your Tax ({taxPercent}%)</span>
-            <span>{yourTax.toFixed(2)}</span>
+            <span>{formatMoney(yourTax)}</span>
           </div>
         )}
         <div className="total-row total-grand">
           <span>You Pay</span>
-          <span>{yourTotal.toFixed(2)}</span>
+          <span>{formatMoney(yourTotal)}</span>
         </div>
       </div>
 
       <div className="btn-row">
-        <button className="btn btn-secondary" onClick={onBack}>← Back</button>
-        <button className="btn btn-secondary" onClick={onReset}>Start Over</button>
+        <button className="btn btn-secondary" onClick={onBack}>
+          ← Back
+        </button>
+        <button className="btn btn-secondary" onClick={onReset}>
+          Start Over
+        </button>
       </div>
     </div>
   );
