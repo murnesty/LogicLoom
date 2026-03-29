@@ -122,10 +122,59 @@ function extractItems(lines: string[]): ReceiptItem[] {
     if (multiResult) {
       items.push(multiResult.item);
       i += multiResult.linesConsumed;
+      continue;
+    }
+
+    // Tesseract / narrow receipts: item name on one line, tabular columns on the next:
+    //   77. Kimchi Jjigae (Lunch) 김치 찌개
+    //   21.00 1 0.00 21.00   (unit price, qty, discount, line amount)
+    const splitCols = tryParseNameThenNumericColumns(lines, i);
+    if (splitCols) {
+      items.push(splitCols.item);
+      i += splitCols.linesConsumed;
     }
   }
 
   return items;
+}
+
+/**
+ * Item description line immediately followed by: price qty discount amount (4 decimals).
+ * Common when OCR wraps long dish names above a numeric row.
+ */
+function tryParseNameThenNumericColumns(
+  lines: string[],
+  index: number,
+): { item: ReceiptItem; linesConsumed: number } | null {
+  const nameLine = lines[index].trim();
+  if (index + 1 >= lines.length) return null;
+
+  const numLine = lines[index + 1].trim();
+  const m = numLine.match(/^(\d+\.\d{2})\s+(\d+)\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s*$/);
+  if (!m) return null;
+
+  const unitPrice = parseFloat(m[1]);
+  const quantity = parseInt(m[2], 10);
+  const discount = parseFloat(m[3]);
+  const amount = parseFloat(m[4]);
+
+  if (quantity <= 0 || quantity >= 100 || unitPrice <= 0 || amount <= 0) return null;
+
+  const expectedLine = unitPrice * quantity - discount;
+  if (Math.abs(amount - expectedLine) > 0.08) return null;
+
+  if (nameLine.length < 3) return null;
+  if (isFooterLine(nameLine) || isItemHeader(nameLine)) return null;
+  // Must not look like the numeric row itself
+  if (/^\d+\.\d{2}\s+\d/.test(nameLine)) return null;
+
+  let name = cleanItemName(nameLine.replace(/^\d+\.\s*/, ''));
+  if (name.length < 2) name = cleanItemName(nameLine);
+
+  return {
+    item: { id: nextId(), name, quantity, unitPrice },
+    linesConsumed: 1,
+  };
 }
 
 /**

@@ -565,4 +565,54 @@ POWERED BY WWW.SISPOS.COM.MY`;
       expect(result.taxPercent).toBe(0);
     });
   });
+
+  describe('Twins DakGalBi receipt (Tesseract: name line + column row on next line)', () => {
+    const rawText = `Twins DakGalBi Restaurant
+Table #6
+Date: 2026.02.03
+Item Price Qty Discount Amount
+77. Kimchi Jjigae (Lunch) 김치 찌개 (점심 메뉴)
+21.00 1 0.00 21.00
+89. Dak Kal Guksu (Lunch) 닭칼국수 (점심 메뉴)
+15.00 5 0.00 75.00
+93. Kim Bap (Lunch) 김밥 (점심 메뉴)
+15.00 1 0.00 15.00
+91. Kimchi Kalguksu (Lunch) 김치 칼국수 (점심 메뉴)
+15.00 1 0.00 15.00
+Total Sales (Exc. Tax) RM 126.00
+Total RM 126.00`;
+
+    it('should extract shop name', () => {
+      const result = parseReceiptText(rawText);
+      expect(result.shopName).toBe('Twins DakGalBi Restaurant');
+    });
+
+    it('should parse 4 items from name + numeric row pairs', () => {
+      const result = parseReceiptText(rawText);
+      expect(result.items).toHaveLength(4);
+    });
+
+    it('should strip menu numbers and parse qty and unit price from column row', () => {
+      const result = parseReceiptText(rawText);
+      expect(result.items[0].name).toContain('Kimchi Jjigae');
+      expect(result.items[0].quantity).toBe(1);
+      expect(result.items[0].unitPrice).toBeCloseTo(21.0, 2);
+
+      expect(result.items[1].name).toContain('Dak Kal Guksu');
+      expect(result.items[1].quantity).toBe(5);
+      expect(result.items[1].unitPrice).toBeCloseTo(15.0, 2);
+
+      expect(result.items[2].name).toContain('Kim Bap');
+      expect(result.items[2].unitPrice).toBeCloseTo(15.0, 2);
+
+      expect(result.items[3].name).toContain('Kimchi Kalguksu');
+      expect(result.items[3].unitPrice).toBeCloseTo(15.0, 2);
+    });
+
+    it('line totals should sum to receipt total', () => {
+      const result = parseReceiptText(rawText);
+      const sum = result.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+      expect(sum).toBeCloseTo(126.0, 2);
+    });
+  });
 });
