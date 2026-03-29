@@ -49,6 +49,7 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: ${{ vars.RECEIPT_CALCULATOR_API_URL }}
+          VITE_GOOGLE_VISION_API_KEY: ${{ vars.GOOGLE_VISION_API_KEY }}
 
       # Combine builds into single pages folder
       - name: Prepare Pages
