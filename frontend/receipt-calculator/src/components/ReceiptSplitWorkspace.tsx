@@ -7,7 +7,6 @@ interface ReceiptSplitWorkspaceProps {
   splitItems: SplitItem[];
   onReceiptMetaChange: (patch: Partial<Pick<Receipt, 'shopName' | 'taxPercent' | 'serviceChargePercent'>>) => void;
   onItemsAndSplitChange: (items: ReceiptItem[], split: SplitItem[]) => void;
-  onBackToCapture: () => void;
   onStartOver: () => void;
 }
 
@@ -49,7 +48,6 @@ export default function ReceiptSplitWorkspace({
   splitItems,
   onReceiptMetaChange,
   onItemsAndSplitChange,
-  onBackToCapture,
   onStartOver,
 }: ReceiptSplitWorkspaceProps) {
   /** Svc % and tax % each apply to pre-fee amounts only (additive, not tax-on-service). */
@@ -117,8 +115,8 @@ export default function ReceiptSplitWorkspace({
       <header className="split-workspace-intro">
         <h2 className="split-workspace-title">Your receipt</h2>
         <p className="section-hint split-workspace-hint">
-          Fix any wrong lines, then tick what you had and set your quantity (and how many people shared it). Your
-          total updates as you go.
+          Upload a receipt on the left and run a local or cloud scan to fill lines. Then fix any mistakes, tick
+          what you had, and set your quantity (and how many people shared it). Your total updates as you go.
         </p>
       </header>
 
@@ -344,9 +342,6 @@ export default function ReceiptSplitWorkspace({
       </div>
 
       <div className="split-workspace-footer">
-        <button type="button" className="btn btn-text" onClick={onBackToCapture}>
-          ← Edit photo &amp; text
-        </button>
         <button type="button" className="btn btn-secondary" onClick={onStartOver}>
           Start over
         </button>

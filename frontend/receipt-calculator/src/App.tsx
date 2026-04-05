@@ -1,11 +1,10 @@
-import { useState, useMemo } from 'react';
-import { AppStep, OcrComparisonPair, Receipt, ReceiptItem, SplitItem } from './types';
+import { useMemo, useState } from 'react';
+import { Receipt, ReceiptItem, SplitItem } from './types';
 import { createOcrService, createGoogleVisionOcrService } from './services/ocrService';
 import { parseReceiptText } from './services/receiptParser';
-import StepIndicator from './components/StepIndicator';
-import ImageUpload from './components/ImageUpload';
-import CapturePostScan from './components/CapturePostScan';
+import ReceiptPhotoPanel from './components/ReceiptPhotoPanel';
 import ReceiptSplitWorkspace from './components/ReceiptSplitWorkspace';
+import RawParsedDataModal from './components/RawParsedDataModal';
 import AppFooter from './components/AppFooter';
 import './App.css';
 
@@ -30,10 +29,6 @@ function App() {
   const ocrService = useMemo(() => createOcrService(), []);
   const googleVisionService = useMemo(() => createGoogleVisionOcrService(), []);
 
-  const [step, setStep] = useState<AppStep>('capture');
-  /** After first successful OCR we show the integrated review layout (not a separate “step” to the user). */
-  const [scanCommitted, setScanCommitted] = useState(false);
-  /** Inline uploader in CapturePostScan left column — avoids jumping to the empty hero screen. */
   const [replacePhotosOpen, setReplacePhotosOpen] = useState(false);
   const [replaceUploadKey, setReplaceUploadKey] = useState(0);
   const [rawText, setRawText] = useState('');
@@ -41,22 +36,30 @@ function App() {
   const [splitItems, setSplitItems] = useState<SplitItem[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  /** Saved default/enhanced pair when extracting from comparison; restored when returning from split. */
-  const [ocrComparison, setOcrComparison] = useState<OcrComparisonPair | null>(null);
-  /** Bumped to clear side-by-side UI in RawTextView after default OCR reset / new scan (per-instance effect). */
-  const [compareInvalidateNonce, setCompareInvalidateNonce] = useState(0);
+  const [rawModalOpen, setRawModalOpen] = useState(false);
 
-  const invalidateSavedComparisonUi = () => {
-    setOcrComparison(null);
-    setCompareInvalidateNonce((n) => n + 1);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrEngine, setOcrEngine] = useState<'tesseract' | 'google' | null>(null);
+  const [tesseractError, setTesseractError] = useState('');
+  const [googleError, setGoogleError] = useState('');
+
+  const applyParsed = (parsed: Receipt) => {
+    setReceipt(parsed);
+    setSplitItems(splitRowsFromParsed(parsed.items));
   };
 
-  const handleScanComplete = (text: string, previews: string[], files: File[]) => {
-    setRawText(text);
+  const clearParsedFromNewImage = () => {
+    setRawText('');
+    setReceipt(emptyReceipt);
+    setSplitItems([]);
+  };
+
+  const handleImageReady = (previews: string[], files: File[]) => {
     setImagePreviews(previews);
     setUploadedFiles(files);
-    setScanCommitted(true);
-    invalidateSavedComparisonUi();
+    clearParsedFromNewImage();
+    setTesseractError('');
+    setGoogleError('');
   };
 
   const handleStartReplacePhotos = () => {
@@ -68,33 +71,53 @@ function App() {
     setReplacePhotosOpen(false);
   };
 
-  const handleReplaceScanComplete = (text: string, previews: string[], files: File[]) => {
-    setRawText(text);
+  const handleReplaceImageReady = (previews: string[], files: File[]) => {
     setImagePreviews(previews);
     setUploadedFiles(files);
     setReplacePhotosOpen(false);
-    invalidateSavedComparisonUi();
+    clearParsedFromNewImage();
+    setTesseractError('');
+    setGoogleError('');
   };
 
-  const goToItemize = (parsed: Receipt) => {
-    setReceipt(parsed);
-    setSplitItems(splitRowsFromParsed(parsed.items));
-    setStep('itemize');
-  };
-
-  const handleExtract = () => {
-    invalidateSavedComparisonUi();
-    goToItemize(parseReceiptText(rawText));
-  };
-
-  const handleUseAndParse = (text: string, comparisonPair?: OcrComparisonPair) => {
-    if (comparisonPair) {
-      setOcrComparison(comparisonPair);
-    } else {
-      setOcrComparison(null);
+  const handleTesseractOcr = async () => {
+    if (uploadedFiles.length === 0) return;
+    setOcrBusy(true);
+    setOcrEngine('tesseract');
+    setTesseractError('');
+    setGoogleError('');
+    try {
+      const result = await ocrService.recognizeImages(uploadedFiles);
+      setRawText(result.text);
+      applyParsed(parseReceiptText(result.text));
+    } catch {
+      setTesseractError('Local scan failed. Try again or use a clearer photo.');
+    } finally {
+      setOcrBusy(false);
+      setOcrEngine(null);
     }
-    setRawText(text);
-    goToItemize(parseReceiptText(text));
+  };
+
+  const handleGoogleOcr = async () => {
+    if (!googleVisionService || uploadedFiles.length === 0) return;
+    setOcrBusy(true);
+    setOcrEngine('google');
+    setTesseractError('');
+    setGoogleError('');
+    try {
+      const result = await googleVisionService.recognizeImages(uploadedFiles);
+      setRawText(result.text);
+      applyParsed(parseReceiptText(result.text));
+    } catch (e) {
+      setGoogleError(e instanceof Error ? e.message : 'Cloud scan failed.');
+    } finally {
+      setOcrBusy(false);
+      setOcrEngine(null);
+    }
+  };
+
+  const handleApplyLineItemsFromModal = () => {
+    applyParsed(parseReceiptText(rawText));
   };
 
   const handleItemsAndSplitChange = (items: ReceiptItem[], split: SplitItem[]) => {
@@ -103,87 +126,64 @@ function App() {
   };
 
   const handleReset = () => {
-    setStep('capture');
-    setScanCommitted(false);
     setReplacePhotosOpen(false);
     setRawText('');
     setReceipt(emptyReceipt);
     setSplitItems([]);
     setImagePreviews([]);
     setUploadedFiles([]);
-    invalidateSavedComparisonUi();
+    setRawModalOpen(false);
+    setTesseractError('');
+    setGoogleError('');
   };
-
-  const splitPanel = (
-    <ReceiptSplitWorkspace
-      receipt={receipt}
-      splitItems={splitItems}
-      onReceiptMetaChange={(patch) => setReceipt((r) => ({ ...r, ...patch }))}
-      onItemsAndSplitChange={handleItemsAndSplitChange}
-      onBackToCapture={() => {
-        setStep('capture');
-        setReplacePhotosOpen(false);
-        if (ocrComparison) {
-          setRawText(ocrComparison.defaultText);
-        }
-      }}
-      onStartOver={handleReset}
-    />
-  );
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>🧾 Receipt Calculator</h1>
+        <p className="app-tagline">Upload a receipt, extract text, then split the bill — one screen.</p>
       </header>
 
-      <StepIndicator currentStep={step} onStepClick={setStep} />
-
       <main className="app-main">
-        {step === 'capture' && !scanCommitted && (
-          <div className="capture-hero-wrap">
-            <ImageUpload ocrService={ocrService} onScanComplete={handleScanComplete} />
-          </div>
-        )}
-
-        {step === 'capture' && scanCommitted && (
-          <CapturePostScan
-            imagePreviews={imagePreviews}
-            uploadedFiles={uploadedFiles}
-            rawText={rawText}
-            onRawTextChange={setRawText}
+        <div className="two-col two-col-itemize single-page-workspace">
+          <ReceiptPhotoPanel
             ocrService={ocrService}
             googleVisionService={googleVisionService}
-            onStartReplacePhotos={handleStartReplacePhotos}
+            imagePreviews={imagePreviews}
+            rawText={rawText}
             replacePhotosOpen={replacePhotosOpen}
-            onCancelReplacePhotos={handleCancelReplacePhotos}
-            onReplaceScanComplete={handleReplaceScanComplete}
             replaceUploadKey={replaceUploadKey}
-            onExtract={handleExtract}
-            onUseAndParse={handleUseAndParse}
-            initialComparisonEnhanced={ocrComparison?.enhancedText ?? null}
-            compareInvalidateNonce={compareInvalidateNonce}
-            onSavedComparisonInvalidated={invalidateSavedComparisonUi}
-            onComparisonDismiss={() => setOcrComparison(null)}
+            onImageReady={handleImageReady}
+            onStartReplacePhotos={handleStartReplacePhotos}
+            onCancelReplacePhotos={handleCancelReplacePhotos}
+            onReplaceImageReady={handleReplaceImageReady}
+            onTesseractOcr={handleTesseractOcr}
+            onGoogleOcr={handleGoogleOcr}
+            ocrBusy={ocrBusy}
+            ocrEngine={ocrEngine}
+            tesseractError={tesseractError}
+            googleError={googleError}
+            onOpenRawModal={() => setRawModalOpen(true)}
           />
-        )}
-
-        {step === 'itemize' && imagePreviews.length > 0 && (
-          <div className="two-col two-col-itemize">
-            <aside className="receipt-preview-panel">
-              <h4 className="panel-title">Receipt</h4>
-              <div className="preview-scroll">
-                {imagePreviews.map((src, i) => (
-                  <img key={i} src={src} alt="Receipt photo" className="preview-full" />
-                ))}
-              </div>
-            </aside>
-            <section className="step-content">{splitPanel}</section>
-          </div>
-        )}
-
-        {step === 'itemize' && imagePreviews.length === 0 && splitPanel}
+          <section className="step-content">
+            <ReceiptSplitWorkspace
+              receipt={receipt}
+              splitItems={splitItems}
+              onReceiptMetaChange={(patch) => setReceipt((r) => ({ ...r, ...patch }))}
+              onItemsAndSplitChange={handleItemsAndSplitChange}
+              onStartOver={handleReset}
+            />
+          </section>
+        </div>
       </main>
+
+      <RawParsedDataModal
+        open={rawModalOpen}
+        onClose={() => setRawModalOpen(false)}
+        rawText={rawText}
+        onRawTextChange={setRawText}
+        onApplyLineItems={handleApplyLineItemsFromModal}
+      />
 
       <AppFooter />
     </div>

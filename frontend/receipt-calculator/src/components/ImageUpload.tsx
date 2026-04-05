@@ -1,14 +1,35 @@
 import { useState, useRef, useCallback } from 'react';
+import type { OcrService } from '../services/ocrService';
 
-interface ImageUploadProps {
+type ScanProps = {
+  scanOnUpload?: true;
+  ocrService: OcrService;
   onScanComplete: (rawText: string, previews: string[], files: File[]) => void;
-  ocrService: { recognizeImages(files: File[], onProgress?: (progress: number, status: string) => void): Promise<{ text: string; confidence: number }> };
+};
+
+type PreviewOnlyProps = {
+  scanOnUpload: false;
+  ocrService: OcrService;
+  onImageReady: (previews: string[], files: File[]) => void;
+};
+
+type ImageUploadProps = (ScanProps | PreviewOnlyProps) & {
   /** Narrow sidebar layout (e.g. replace flow without leaving the step). */
   compact?: boolean;
+};
+
+function isPreviewOnly(p: ImageUploadProps): p is PreviewOnlyProps {
+  return p.scanOnUpload === false;
 }
 
-/** One receipt image per session; a new pick replaces the previous. Scan runs as soon as an image is chosen. */
-export default function ImageUpload({ onScanComplete, ocrService, compact = false }: ImageUploadProps) {
+/** One receipt image per session; a new pick replaces the previous. With `scanOnUpload: false`, only previews are set — parent runs OCR. */
+export default function ImageUpload(props: ImageUploadProps) {
+  const { compact = false } = props;
+  const previewOnly = isPreviewOnly(props);
+  const ocrService = props.ocrService;
+  const onScanComplete = !previewOnly ? props.onScanComplete : undefined;
+  const onImageReady = previewOnly ? props.onImageReady : undefined;
+
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -21,7 +42,7 @@ export default function ImageUpload({ onScanComplete, ocrService, compact = fals
 
   const runScan = useCallback(
     async (scanFiles: File[], scanPreviews: string[]) => {
-      if (scanFiles.length === 0) return;
+      if (scanFiles.length === 0 || !onScanComplete) return;
       const gen = ++scanGenerationRef.current;
       setScanning(true);
       setProgress(0);
@@ -60,11 +81,15 @@ export default function ImageUpload({ onScanComplete, ocrService, compact = fals
       reader.onload = (e) => {
         const dataUrl = e.target?.result as string;
         setPreviews([dataUrl]);
-        void runScan([file], [dataUrl]);
+        if (onImageReady) {
+          onImageReady([dataUrl], [file]);
+        } else {
+          void runScan([file], [dataUrl]);
+        }
       };
       reader.readAsDataURL(file);
     },
-    [runScan],
+    [onImageReady, runScan],
   );
 
   const removeFile = (index: number) => {
@@ -83,9 +108,11 @@ export default function ImageUpload({ onScanComplete, ocrService, compact = fals
   };
 
   const handleRetry = () => {
-    if (files.length === 0 || previews.length === 0) return;
+    if (files.length === 0 || previews.length === 0 || previewOnly) return;
     void runScan(files, previews);
   };
+
+  const showProgress = !previewOnly && scanning;
 
   return (
     <div className={`upload-section${compact ? ' upload-section--compact' : ''}`}>
@@ -114,7 +141,11 @@ export default function ImageUpload({ onScanComplete, ocrService, compact = fals
         <div className="drop-zone-content">
           <span className="drop-icon">📷</span>
           <p>Drag & drop a receipt photo here</p>
-          <p className="drop-hint">or click to browse — we scan it right away (one image)</p>
+          <p className="drop-hint">
+            {previewOnly
+              ? 'or click to browse — one image, then choose local or cloud scan below'
+              : 'or click to browse — we scan it right away (one image)'}
+          </p>
         </div>
       </div>
 
@@ -140,7 +171,7 @@ export default function ImageUpload({ onScanComplete, ocrService, compact = fals
         </div>
       )}
 
-      {scanning && (
+      {showProgress && (
         <div className="progress-section">
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${progress}%` }} />
@@ -151,7 +182,7 @@ export default function ImageUpload({ onScanComplete, ocrService, compact = fals
         </div>
       )}
 
-      {scanFailed && files.length > 0 && !scanning && (
+      {!previewOnly && scanFailed && files.length > 0 && !scanning && (
         <button type="button" className="btn btn-secondary upload-retry-btn" onClick={handleRetry}>
           Retry scan
         </button>
