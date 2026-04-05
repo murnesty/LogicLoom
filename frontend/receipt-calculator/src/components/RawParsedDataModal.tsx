@@ -6,6 +6,9 @@ interface RawParsedDataModalProps {
   rawText: string;
   onRawTextChange: (text: string) => void;
   onApplyLineItems: () => void;
+  parseBusy?: boolean;
+  /** When true, hint that apply uses ReceiptCalculator.Api */
+  serverParse?: boolean;
 }
 
 /**
@@ -17,6 +20,8 @@ export default function RawParsedDataModal({
   rawText,
   onRawTextChange,
   onApplyLineItems,
+  parseBusy = false,
+  serverParse = false,
 }: RawParsedDataModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -62,6 +67,12 @@ export default function RawParsedDataModal({
         </div>
         <p className="modal-lead">
           This is what OCR returned. Edit if needed, then apply to rebuild the line-item table.
+          {serverParse && (
+            <>
+              {' '}
+              <strong>Apply</strong> uses the ReceiptCalculator API (SQLite-backed rules when configured on the server).
+            </>
+          )}
         </p>
         <textarea
           className="raw-text-area raw-text-area--modal"
@@ -81,9 +92,9 @@ export default function RawParsedDataModal({
               onApplyLineItems();
               onClose();
             }}
-            disabled={!rawText.trim()}
+            disabled={!rawText.trim() || parseBusy}
           >
-            Apply line items from text
+            {parseBusy ? 'Applying…' : 'Apply line items from text'}
           </button>
         </div>
       </div>

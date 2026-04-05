@@ -1,5 +1,6 @@
 using System.Text;
 using Xunit;
+using ReceiptCalculator.Api.Tests.Parsing;
 using ReceiptCalculator.Api.Application.UseCases;
 using ReceiptCalculator.Api.DTOs;
 using ReceiptCalculator.Api.Domain.Services;
@@ -14,7 +15,7 @@ public sealed class AnalyzeReceiptUseCaseTests
     public async Task ExecuteAsync_WhenValidInput_ReturnsAllocatedTaxes()
     {
         var ocrService = new FakeOcrService();
-        var parser = new BasicReceiptParser();
+        var parser = new BasicReceiptParser(new TestParserRulesProvider());
         var totalsCalculator = new ReceiptTotalsCalculator();
         var useCase = new AnalyzeReceiptUseCase(ocrService, parser, totalsCalculator);
 

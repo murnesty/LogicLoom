@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ReceiptCalculator.Api.Application.UseCases;
 using ReceiptCalculator.Api.DTOs;
 using ReceiptCalculator.Api.Domain.Services;
@@ -7,9 +8,13 @@ using Microsoft.Extensions.Options;
 using ReceiptCalculator.Api.Infrastructure.Vision;
 
 var builder = WebApplication.CreateBuilder(args);
+// Optional local overrides (gitignored) — copy from appsettings.Local.json.example
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 builder.Services.Configure<VisionOptions>(builder.Configuration.GetSection(VisionOptions.SectionName));
+builder.Services.Configure<ParserRulesOptions>(builder.Configuration.GetSection(ParserRulesOptions.SectionName));
 builder.Services.AddSingleton<SqliteVisionUsageLimiter>();
+builder.Services.AddSingleton<IParserRulesProvider, SqliteParserRulesProvider>();
 builder.Services.AddHttpClient<GoogleVisionDocumentClient>();
 
 // Add CORS for frontend
@@ -28,7 +33,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IOcrService, DummyOcrService>();
-builder.Services.AddSingleton<IReceiptParser, BasicReceiptParser>();
+builder.Services.AddSingleton<BasicReceiptParser>();
+builder.Services.AddSingleton<IReceiptParser>(sp => sp.GetRequiredService<BasicReceiptParser>());
 builder.Services.AddSingleton<ReceiptTotalsCalculator>();
 builder.Services.AddSingleton<AnalyzeReceiptUseCase>();
 
@@ -110,6 +116,13 @@ app.MapPost("/api/receipt/analyze-test", (
 .Accepts<AnalyzeReceiptTextRequestDto>("application/json")
 .Produces<AnalyzeReceiptResponseDto>(StatusCodes.Status200OK);
 
+app.MapGet("/api/receipt/parser-rules", (IParserRulesProvider provider) =>
+    Results.Json(
+        provider.GetActiveSnapshot(),
+        new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }))
+.WithTags("Receipt")
+.WithName("GetParserRules");
+
 app.MapPost("/api/vision/document-text", async (
     VisionDocumentTextRequestDto request,
     SqliteVisionUsageLimiter limiter,
@@ -121,7 +134,7 @@ app.MapPost("/api/vision/document-text", async (
     if (string.IsNullOrWhiteSpace(opt.ApiKey))
     {
         return Results.Json(
-            new { error = "Vision proxy is not configured (missing server API key)." },
+            new { error = "Cloud scan is not configured (add Google Vision API key on the server)." },
             statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 
@@ -143,8 +156,8 @@ app.MapPost("/api/vision/document-text", async (
     if (!quota.Allowed)
     {
         var err = quota.BlockedBy == "monthly"
-            ? "Monthly enhanced OCR limit reached for this server (UTC calendar month)."
-            : "Daily enhanced OCR limit reached for this server (UTC).";
+            ? "Monthly cloud scan limit reached for this server (UTC calendar month)."
+            : "Daily cloud scan limit reached for this server (UTC).";
         return Results.Json(
             new
             {

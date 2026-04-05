@@ -1,0 +1,68 @@
+Table No.T4
+Order No. : ONL7967
+Server. supervisor
+23 Dec 2025
+Pax :0
+Chicken Thigh Rice (Norma
+15.90
+1
+Korean Roasted Tea (Cold)
+Chicken Thigh Rice (Spicy
+15.90
+Korean Roasted Tea (Cold)
+Chicken Thigh Rice (Norma
+15.90
+Korean Roasted Tea (Cold)
+Chicken Thigh Rice (Norma
+15.90
+Korean Roasted Tea (Cold)
+Chicken Thigh Rice (Spicy
+15.90
+Japanese Green Tea (Hot)
+Chicken Thigh Rice (Norma
+15.90
+Japanese Green Tea (Cold)
+Chicken Thigh Rice (Norma
+15.90
+Korean Roasted Tea (Cold)
+1
+Chicken Thigh Rice (Spicy
+15.90
+1
+Korean Roasted Tea (Cold)
+1
+Chicken Thigh Rice (Norma
+15.90
+1
+Korean Roasted Tea (Cold)
+1
+Chicken Thigh Rice (Norma
+15.90
+1
+Japanese Green Tea (Hot)
+1
+Chicken Thigh Rice (Norma
+15.90
+1
+Korean Roasted Tea (Cold)
+1
+Chicken Thigh Rice (Norma
+15.90
+1
+Korean Roasted Tea (Hot)
+Subtotal
+190.80
+Service Charge
+19.08
+Round Adj
+0.02
+TOTAL
+209.90
+Visa
+-- Closed at 23 Dec 2025 01:15:20 PM ---
+Invoice No. POS20764
+Cashier [supervisor]
+*** Thank you ***
+Please come again
+209.90
+Printed on 23 Dec 2025 01:15:21 PM

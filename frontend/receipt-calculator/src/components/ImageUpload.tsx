@@ -22,6 +22,12 @@ function isPreviewOnly(p: ImageUploadProps): p is PreviewOnlyProps {
   return p.scanOnUpload === false;
 }
 
+/** Windows often reports `.jfif` / some phone exports as empty or non-image MIME — still valid images. */
+function isLikelyImageFile(f: File): boolean {
+  if (f.type.startsWith('image/')) return true;
+  return /\.(jpe?g|jfif|png|gif|webp|bmp|heic|heif)$/i.test(f.name);
+}
+
 /** One receipt image per session; a new pick replaces the previous. With `scanOnUpload: false`, only previews are set — parent runs OCR. */
 export default function ImageUpload(props: ImageUploadProps) {
   const { compact = false } = props;
@@ -71,7 +77,7 @@ export default function ImageUpload(props: ImageUploadProps) {
 
   const addFiles = useCallback(
     (newFiles: FileList | File[]) => {
-      const imageFiles = Array.from(newFiles).filter((f) => f.type.startsWith('image/'));
+      const imageFiles = Array.from(newFiles).filter(isLikelyImageFile);
       if (imageFiles.length === 0) return;
 
       const file = imageFiles[0];

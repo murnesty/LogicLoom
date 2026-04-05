@@ -1,0 +1,50 @@
+LUCKIN KITCHEN
+外婆家中餐馆
+Tel: 01127348066
+No. 14, Jalan SS15/4c, Ss15, 47500 Subang Jaya,
+Selangor
+Table:03
+#0005
+Туре
+Dine-in
+Name
+Num (7)
+Subtotal
+MX2酸菜肉沫米线
+1
+12.00
+白开水Water
+0.80
++ **Cold
+G8包菜炒肉盖饭Stir-fr 12
+12.80
+y Cabbage with Pork
++ 煎蛋
+1.70
+中国茶Chinese Tea
+1.00
++Cold
+G1Twice-Coo 1
+15.00
+ked Pork Rice Bowl
+M3番茄鸡蛋面
+10.00
++ 细面Thin mee
++ 煎蛋Fried egg
+G17/Stir-Fry 1
+Pork Rice Bowl
+Product
+Total Amount
+Order ID
+Order Time
+Print Time
+13
+28
+1.50
+13.80
+68.60
+88
+68.60
+12260112000PDIFOPB4
+12/01/2026 12:24pm
+12/01/2026 01:17pm

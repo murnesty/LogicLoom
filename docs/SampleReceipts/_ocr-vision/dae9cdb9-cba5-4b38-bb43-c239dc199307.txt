@@ -1,0 +1,81 @@
+Client Name Foo Jackson
+Client Points 142 00
+Item Name
+Qty Price(RM)
+The Manhattan Fish 1
+9.34
+N Chips Dory
+Coke + Wild
+1
+6.51
+Mushroom
+Soup (Lite)
+N Chips Dory
+The Manhattan Fish 1
+9.34
+Coke + Wild
+6.51
+Mushroom
+Soup (Lite)
+The Manhattan Fish 1
+N Chips Dory
+Coke + Garlic
+Herb Rice
+N Chips Dory
+9.34
+7 45
+The Manhattan Fish 1
+9.34
+Coke + Wild
+6.51
+Mushroom
+Soup (Lite)
+The Manhattan Fish 1
+N Chips Dory
+Sprite + Wild
+9.34
+6.51
+Mushroom
+Soup (Lite)
+The Manhattan Fish 1
+9.34
+N Chips Dory
+Sprite+ Garlic
+7.45
+Herb Rice
+The Manhattan Fish 1
+9.34.
+N Chips Dory
+Coke + Wild
+651
+Mushroom
+Soup (Lite)
+The Manhattan Fish 1
+9.34
+N Chips Dory
+Sub Total
+122 17
+Service Charge 10%
+Tax Amount
+12 22
+7.33
+Rounding
+-0.02
+141.70
+Voucher
+MLGhnhH000000
+000030578
+QR
+10.00
+10.00
+131 70
+Code
+Amount
+Tax
+SST @6%
+SSTO@0%
+122 17
+7.33
+12.22
+0.00
+Thank You Please Come Again

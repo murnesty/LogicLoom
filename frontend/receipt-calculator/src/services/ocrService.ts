@@ -54,8 +54,8 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Enhanced OCR always goes through ReceiptCalculator.Api `POST /api/vision/document-text`
- * (local and production). Google key + quotas live on the server only.
+ * Cloud scan (Google Vision) goes through ReceiptCalculator.Api `POST /api/vision/document-text`.
+ * API key and scan limits live on the server only.
  */
 class ProxiedVisionOcrService implements OcrService {
   constructor(private baseUrl: string) {}
@@ -77,7 +77,7 @@ class ProxiedVisionOcrService implements OcrService {
 
     const data = (await res.json().catch(() => ({}))) as { error?: string; text?: string };
     if (!res.ok) {
-      throw new Error(data.error || `Enhanced OCR proxy failed (${res.status})`);
+      throw new Error(data.error || `Cloud scan failed (${res.status})`);
     }
 
     onProgress?.(1, 'Done');

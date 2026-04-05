@@ -28,6 +28,187 @@
   line-height: 1.35;
 }
 
+.parse-mode-hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  color: #5a6278;
+  line-height: 1.4;
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.parse-mode-hint code {
+  font-size: 0.76rem;
+  background: #f0f2f8;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+
+.parse-error-banner {
+  max-width: 52rem;
+  margin: 0.5rem auto 0;
+  padding: 0.55rem 0.85rem;
+  background: #fdeaea;
+  border: 1px solid #e8b4b4;
+  border-radius: 8px;
+  color: #8b2c2c;
+  font-size: 0.85rem;
+}
+
+.parser-version-panel {
+  max-width: 42rem;
+  margin: 0.75rem auto 0;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: #f8f9fc;
+  border: 1px solid #e2e7f2;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: #333;
+}
+
+.parser-version-panel-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.parser-version-panel-lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: #666;
+}
+
+.parser-version-panel-lead code {
+  font-size: 0.72rem;
+  background: #eef1f6;
+  padding: 0.08rem 0.28rem;
+  border-radius: 4px;
+}
+
+.parser-version-dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.parser-version-row {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.parser-version-row dt {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6a7085;
+}
+
+.parser-version-row dd {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #1a1a2e;
+}
+
+.parser-version-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: #4361ee;
+  color: #fff;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.parser-version-id {
+  margin-left: 0.45rem;
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.parser-version-empty {
+  color: #999;
+  font-weight: 400;
+}
+
+.parser-version-actions {
+  margin-top: 0.5rem;
+}
+
+.parser-rules-debug-json {
+  margin-top: 0.65rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e7f2;
+}
+
+.parser-rules-debug-json-summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: #5a6278;
+}
+
+.parser-rules-debug {
+  max-width: 42rem;
+  margin: 0.65rem auto 0;
+  text-align: left;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.parser-rules-debug-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #4361ee;
+}
+
+.parser-rules-debug-hint {
+  margin: 0.4rem 0 0.35rem;
+  line-height: 1.4;
+  color: #666;
+}
+
+.parser-rules-debug-hint code {
+  font-size: 0.76rem;
+}
+
+.parser-rules-debug-pre {
+  margin: 0.35rem 0;
+  padding: 0.6rem 0.75rem;
+  max-height: 220px;
+  overflow: auto;
+  background: #f6f7fb;
+  border: 1px solid #dde;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.parser-rules-debug-status {
+  margin: 0.25rem 0;
+  color: #666;
+}
+
+.parser-rules-debug-refresh {
+  margin-top: 0.25rem;
+}
+
+.parse-inline-status {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #4361ee;
+  font-weight: 600;
+}
+
 .app-main {
   flex: 1;
   display: flex;
@@ -982,7 +1163,7 @@
   box-sizing: border-box;
 }
 
-/* ---- OCR tool group (default + enhanced, same chrome) ---- */
+/* ---- OCR tool group (local scan + cloud scan, same chrome) ---- */
 
 .ocr-tool-group {
   margin-bottom: 0.85rem;

@@ -169,6 +169,16 @@ Qty Item Price
       expect(result.shopName).toBe('Unknown Shop');
     });
 
+    it('should skip kiosk/session header when inferring shop name', () => {
+      const rawText = `L01 DINE IN Lunch Set
+MY REAL SHOP
+Qty Item Price
+1 Nasi 5.00
+Subtotal 5.00`;
+      const result = parseReceiptText(rawText);
+      expect(result.shopName).toBe('MY REAL SHOP');
+    });
+
     it('should preserve raw text in result', () => {
       const rawText = 'Some raw text here';
       const result = parseReceiptText(rawText);
@@ -563,6 +573,23 @@ POWERED BY WWW.SISPOS.COM.MY`;
     it('should calculate 0% tax (subtotal equals total)', () => {
       const result = parseReceiptText(rawText);
       expect(result.taxPercent).toBe(0);
+    });
+  });
+
+  describe('Tesseract numeric row with OCR discount 000', () => {
+    const rawText = `Twins Restaurant
+Item Price Qty Discount Amount
+91. Kimchi Kalguksu (Lunch) ZX
+15.00 1 000 15.00
+Total Sales (Exc. Tax) RM 15.00
+TOTAL RM 15.00`;
+
+    it('should parse unit qty discount line when discount is OCRd as 000', () => {
+      const result = parseReceiptText(rawText);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].name).toContain('Kimchi Kalguksu');
+      expect(result.items[0].quantity).toBe(1);
+      expect(result.items[0].unitPrice).toBeCloseTo(15.0, 2);
     });
   });
 

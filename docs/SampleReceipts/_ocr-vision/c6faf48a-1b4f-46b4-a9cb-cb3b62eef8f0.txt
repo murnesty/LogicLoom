@@ -1,0 +1,62 @@
+LUCKIN KITCHE
+外婆家中餐馆
+Tel: 01127348066
+No.14, Jalan SS15/4c, Ss15, 47500 Subang Jaya.
+Selangor
+Table:10
+Type
+0160
+Dine-in
+Name
+Num(12)
+Subtotal
+C23tofu puff
+1
+3.00
+香米饭rice(免费续饭) 1
+2.00
+C19 Potato
+2.50
+C18
+Chinese
+cabb 1
+18885
+2
+2.50
+age
+C6混合鱼丸Mix fishbal
+1
+5.00
+麻辣烫Soup(至少选择3样1
+0.00
+食材)
++mid sipcy
+中国Chinese Tea 1
+1.00
++ Cold
+G1Twice-Coo 1
+15.00
+ked Pork Rice Bowl
+66Sweet & 1
+12.80
+Sour Chicken Rice Bo
+蜂蜜柠檬茶Honey Lemon 1
+4.50
+Tea
+S4油炸午餐肉Fried Lun
+1
+9.00
+chean Meat
+8.00
+E1Egg Fried Ric 1
+e
+Product
+Total Amount
+Order ID
+Order Time
+Print Time
+65.30
+65.30
+1226012300387R10FOV
+23/01/2026 12:25pm
+23/01/2026 01:25pm

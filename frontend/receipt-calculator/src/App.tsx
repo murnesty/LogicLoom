@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Receipt, ReceiptItem, SplitItem } from './types';
 import { createOcrService, createGoogleVisionOcrService } from './services/ocrService';
 import { parseReceiptText } from './services/receiptParser';
+import { getReceiptApiBaseUrl, parseReceiptViaApi } from './services/receiptApiParse';
 import ReceiptPhotoPanel from './components/ReceiptPhotoPanel';
 import ReceiptSplitWorkspace from './components/ReceiptSplitWorkspace';
 import RawParsedDataModal from './components/RawParsedDataModal';
+import ParserRulesDebugPanel from './components/ParserRulesDebugPanel';
 import AppFooter from './components/AppFooter';
 import './App.css';
+
+const DEFAULT_CURRENCY = 'MYR';
 
 const emptyReceipt: Receipt = {
   shopName: '',
@@ -28,6 +32,7 @@ function splitRowsFromParsed(items: ReceiptItem[]): SplitItem[] {
 function App() {
   const ocrService = useMemo(() => createOcrService(), []);
   const googleVisionService = useMemo(() => createGoogleVisionOcrService(), []);
+  const serverParseEnabled = useMemo(() => getReceiptApiBaseUrl() !== null, []);
 
   const [replacePhotosOpen, setReplacePhotosOpen] = useState(false);
   const [replaceUploadKey, setReplaceUploadKey] = useState(0);
@@ -42,16 +47,38 @@ function App() {
   const [ocrEngine, setOcrEngine] = useState<'tesseract' | 'google' | null>(null);
   const [tesseractError, setTesseractError] = useState('');
   const [googleError, setGoogleError] = useState('');
+  const [parseBusy, setParseBusy] = useState(false);
+  const [parseError, setParseError] = useState('');
 
   const applyParsed = (parsed: Receipt) => {
     setReceipt(parsed);
     setSplitItems(splitRowsFromParsed(parsed.items));
   };
 
+  const runParse = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+    if (serverParseEnabled) {
+      setParseBusy(true);
+      setParseError('');
+      try {
+        const parsed = await parseReceiptViaApi(text, text, DEFAULT_CURRENCY);
+        applyParsed(parsed);
+      } catch (e) {
+        setParseError(e instanceof Error ? e.message : 'Server parse failed.');
+      } finally {
+        setParseBusy(false);
+      }
+    } else {
+      setParseError('');
+      applyParsed(parseReceiptText(text));
+    }
+  }, [serverParseEnabled]);
+
   const clearParsedFromNewImage = () => {
     setRawText('');
     setReceipt(emptyReceipt);
     setSplitItems([]);
+    setParseError('');
   };
 
   const handleImageReady = (previews: string[], files: File[]) => {
@@ -89,7 +116,7 @@ function App() {
     try {
       const result = await ocrService.recognizeImages(uploadedFiles);
       setRawText(result.text);
-      applyParsed(parseReceiptText(result.text));
+      await runParse(result.text);
     } catch {
       setTesseractError('Local scan failed. Try again or use a clearer photo.');
     } finally {
@@ -107,7 +134,7 @@ function App() {
     try {
       const result = await googleVisionService.recognizeImages(uploadedFiles);
       setRawText(result.text);
-      applyParsed(parseReceiptText(result.text));
+      await runParse(result.text);
     } catch (e) {
       setGoogleError(e instanceof Error ? e.message : 'Cloud scan failed.');
     } finally {
@@ -117,7 +144,7 @@ function App() {
   };
 
   const handleApplyLineItemsFromModal = () => {
-    applyParsed(parseReceiptText(rawText));
+    void runParse(rawText);
   };
 
   const handleItemsAndSplitChange = (items: ReceiptItem[], split: SplitItem[]) => {
@@ -135,6 +162,7 @@ function App() {
     setRawModalOpen(false);
     setTesseractError('');
     setGoogleError('');
+    setParseError('');
   };
 
   return (
@@ -142,7 +170,27 @@ function App() {
       <header className="app-header">
         <h1>🧾 Receipt Calculator</h1>
         <p className="app-tagline">Upload a receipt, extract text, then split the bill — one screen.</p>
+        <p className="parse-mode-hint">
+          Line items:{' '}
+          {serverParseEnabled ? (
+            <>
+              <strong>server parse</strong> (ReceiptCalculator.Api + SQLite rules). Set{' '}
+              <code>VITE_RECEIPT_API_URL</code> or <code>VITE_VISION_PROXY_URL</code>.
+            </>
+          ) : (
+            <>
+              <strong>browser parse</strong> only — set API URL to use server rules from SQLite.
+            </>
+          )}
+        </p>
+        <ParserRulesDebugPanel />
       </header>
+
+      {parseError && (
+        <div className="parse-error-banner" role="alert">
+          {parseError}
+        </div>
+      )}
 
       <main className="app-main">
         <div className="two-col two-col-itemize single-page-workspace">
@@ -164,6 +212,7 @@ function App() {
             tesseractError={tesseractError}
             googleError={googleError}
             onOpenRawModal={() => setRawModalOpen(true)}
+            parseBusy={parseBusy}
           />
           <section className="step-content">
             <ReceiptSplitWorkspace
@@ -183,6 +232,8 @@ function App() {
         rawText={rawText}
         onRawTextChange={setRawText}
         onApplyLineItems={handleApplyLineItemsFromModal}
+        parseBusy={parseBusy}
+        serverParse={serverParseEnabled}
       />
 
       <AppFooter />

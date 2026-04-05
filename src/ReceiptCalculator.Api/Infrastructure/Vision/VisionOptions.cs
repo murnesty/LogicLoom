@@ -25,4 +25,10 @@ public class VisionOptions
 
     /// <summary>Reject requests with more than this many images (abuse guard).</summary>
     public int MaxImagesPerRequest { get; set; } = 5;
+
+    /// <summary>
+    /// When true, daily/monthly SQLite scan counters are not enforced (e.g. Production profile on localhost).
+    /// In ASP.NET Core Development hosting, limits are skipped automatically regardless of this flag.
+    /// </summary>
+    public bool DisableScanLimits { get; set; }
 }

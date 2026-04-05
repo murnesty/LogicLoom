@@ -1,0 +1,110 @@
+SPA
+CHICKEN
+SPA Chicken
+Table #
+19
+Printed On: 2026.02.24 13:17:59
+SPA
+CHICKEN
+SPA Chicken
+Table #
+17
+Printed On: 2026 02 24 13.17:50
+Cashier: Aung Aung
+Cashier: Aung Aung
+Register #: 1
+Register #1
+Item
+Price Qty Discount Amount
+Item
+Price Qty
+Discount
+Amount
+SPA
+CHICKEN
+SPA Chicken
+Table #
+20
+Printed On: 2026 02.24 13:18:06
+Cashier: Aung Aung
+Register #: 1
+Item
+Price
+Qty Discount
+Amount
+B5-Chicken Breast (R)
+$1-Chicken Flavoured Rice
+10.00
+1
+0.00
+10.00
+F12-Chinese Tea P
+(15)Hot
+1.00
+1
+0.00
+1.00
+87-Chicken Drumstick ()
+$1-Chicken Flavoured Rice
+12.00
+1
+0.00
+12.00
+85 Chicken Breast N (RE)
+$1-Chicken Flavoured Rice, Black
+Sauce x1
+B6 Chicken Thigh
+(M)
+$1-Chicken Flavoured Rice, Black
+Sauce 黑醬油x1
+F12-Chinese Tea P
+10.00
+4
+0.00
+40.00
+12.00
+$1-Chicken Flavour Rice
+0.00
+12.00
+(5)Hot
+1.00
+1
+0.00
+1.00
+Total Sales (Exc. Tax)
+RM 13.00
+Total Sales (Exc. Tax)
+DISCOUNT
+Service Charge (10%)
+RM 40.00
+-RM 0.00
+3.00
+1
+0.00
+3.00
+Total Sales (Exc. Tax)
+RM 26.00
+RM 4.00
+DISCOUNT
+-RM 0.00
+DISCOUNT
+-RM 0.00
+Тах
+RM 0.00
+Service Charge (10%)
+RM 2.60
+Service Charge (10%)
+RM 1.30
+TOTAL
+RM 44.00
+Tax
+RM 0.00
+Tax
+RM 0.00
+TOTAL
+Thank you please come again!
+RM 14.30
+TOTAL
+Thank you please come again!
+RM 28.60
+Thank you please come again!

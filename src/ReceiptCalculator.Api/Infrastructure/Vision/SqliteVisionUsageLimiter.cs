@@ -11,6 +11,7 @@ public sealed class SqliteVisionUsageLimiter
     private readonly string _connectionString;
     private readonly int _dailyLimit;
     private readonly int _monthlyLimit;
+    private readonly bool _bypassScanLimits;
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private bool _initialized;
 
@@ -29,6 +30,7 @@ public sealed class SqliteVisionUsageLimiter
             .ToString();
         _dailyLimit = Math.Max(0, opt.DailyScanLimit);
         _monthlyLimit = Math.Max(0, opt.MonthlyScanLimit);
+        _bypassScanLimits = opt.DisableScanLimits || env.IsDevelopment();
     }
 
     private async Task EnsureSchemaAsync(CancellationToken cancellationToken)
@@ -85,6 +87,18 @@ public sealed class SqliteVisionUsageLimiter
                 DailyLimit = _dailyLimit,
                 ScansUsedThisMonth = 0,
                 MonthlyLimit = _monthlyLimit,
+            };
+        }
+
+        if (_bypassScanLimits)
+        {
+            return new VisionConsumeResult
+            {
+                Allowed = true,
+                ScansUsedToday = 0,
+                DailyLimit = 0,
+                ScansUsedThisMonth = 0,
+                MonthlyLimit = 0,
             };
         }
 

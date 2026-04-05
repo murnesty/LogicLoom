@@ -19,6 +19,8 @@ interface ReceiptPhotoPanelProps {
   tesseractError: string;
   googleError: string;
   onOpenRawModal: () => void;
+  /** Server/browser line-item parse in progress after OCR */
+  parseBusy?: boolean;
 }
 
 export default function ReceiptPhotoPanel({
@@ -39,9 +41,10 @@ export default function ReceiptPhotoPanel({
   tesseractError,
   googleError,
   onOpenRawModal,
+  parseBusy = false,
 }: ReceiptPhotoPanelProps) {
   const hasImage = imagePreviews.length > 0;
-  const canRunOcr = hasImage && !ocrBusy;
+  const canRunOcr = hasImage && !ocrBusy && !parseBusy;
   const googleAvailable = googleVisionService !== null;
 
   return (
@@ -88,21 +91,10 @@ export default function ReceiptPhotoPanel({
           <div className="ocr-engine-block" aria-label="Extract text from image">
             <p className="ocr-engine-block-label">Extract text</p>
             <p className="ocr-engine-block-hint">
-              Pick one option. Line items appear on the right after a successful run.
+              Pick one option. Cloud scan usually reads line items more reliably than local scan when the server is
+              configured. Line items appear on the right after a successful run.
             </p>
             <div className="ocr-engine-buttons">
-              <button
-                type="button"
-                className="btn-ocr-engine"
-                onClick={onTesseractOcr}
-                disabled={!canRunOcr}
-              >
-                <span className="btn-ocr-engine-title">Local scan</span>
-                <span className="btn-ocr-engine-badge">Free · runs in your browser</span>
-                {ocrBusy && ocrEngine === 'tesseract' && (
-                  <span className="btn-ocr-engine-status">Working…</span>
-                )}
-              </button>
               <button
                 type="button"
                 className="btn-ocr-engine btn-ocr-engine--cloud"
@@ -111,13 +103,26 @@ export default function ReceiptPhotoPanel({
               >
                 <span className="btn-ocr-engine-title">Cloud scan</span>
                 <span className="btn-ocr-engine-badge">
-                  {googleAvailable ? 'Cloud · quota on server (may be limited)' : 'Not configured'}
+                  {googleAvailable ? 'Cloud scan · Google Vision on server (quota may apply in production)' : 'Not configured'}
                 </span>
                 {ocrBusy && ocrEngine === 'google' && (
                   <span className="btn-ocr-engine-status">Working…</span>
                 )}
               </button>
+              <button
+                type="button"
+                className="btn-ocr-engine"
+                onClick={onTesseractOcr}
+                disabled={!canRunOcr}
+              >
+                <span className="btn-ocr-engine-title">Local scan</span>
+                <span className="btn-ocr-engine-badge">Free · Tesseract in your browser</span>
+                {ocrBusy && ocrEngine === 'tesseract' && (
+                  <span className="btn-ocr-engine-status">Working…</span>
+                )}
+              </button>
             </div>
+            {parseBusy && <p className="parse-inline-status">Building line items…</p>}
             {tesseractError && <p className="google-ocr-error">{tesseractError}</p>}
             {googleError && <p className="google-ocr-error">{googleError}</p>}
           </div>

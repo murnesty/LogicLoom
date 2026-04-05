@@ -1,0 +1,52 @@
+TWINS DAK GALBI
+RESTAURANT
+Twins DakGalBi Restaurant
+Address: Ground Floor, No. 29, Jalan SS 15/4, Subang
+Jaya Selangor 47500
+Phone: 60356126082
+Company Name: Ubiquitous Communications Sdn Bhd
+Business Registration Number:670979-V
+Table #
+6
+Receipt Date: 2026.02.03 13:20:38
+Receipt #: 0002602031320026
+Cashier: TwinsDakGalbi Manager
+Register #: 1
+Item
+Price
+Qty
+Discount Amount
+77. Kimchi Jjigae (Lunch)
+()
+21.00
+1
+0.00
+21.00
+89. Dak Kal Guksu (Lunch) (PT)
+15.00
+5
+0.00
+93. Kim Bap (Lunch) (NA)
+15.00
+91. Kimchi Kalguksu (Lunch)
+75.00
+1
+0.00
+15.00
+ART (A)
+15.00
+1
+0.00
+15.00
+Total Sales (Exc. Tax)
+RM 126.00
+Tax
+RM 0.00
+TOTAL
+RM 126.00
+DUIT NOW
+RM 126.00
+Payment Ref:
+MBBQR111113012394123
+Thank you. Please come again.
+POWERED BY STOREHUB.COM CLOUD POS

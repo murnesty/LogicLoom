@@ -1,0 +1,48 @@
+Mee
+4b, 47500
+Selangor.
+31134
+BILL
+Order: D1
+Employee: Jeng Pan Mee
+POS: POS 1
+Dine in
+'SET' PM01 HOMETOWN
+13.00
+1 x 13.00
++(M)
+'SET PM01 HOMETOWN
+13.00
+1 x 13.00
++粗(K)
+PM02 HERBAL 5
+13.50
+1 x 13.50
++粗 (K)
+PM03 DRY PAN MEE
+11.50
+1 x 11.50
++ 幼(Y)
+*SET* PM03 DRY PAN MEE 14.50
+1 x 13.00
+++ Egg (1.50)
++(M)
+*SET' PM02 HERBAL 5 16.00
+1 x 14.50
+++ Egg (1.50)
++幼(Y)
+*SET' PM04 DRY CHILLI 29.00
+2 x 14.50
++ 幼(Y)
+*SET' PM04 DRY CHILLI 33.00
+2 x 14.50
+++ Mee (4.00)
++(K)
+*SET' R02 Thal Basil Rice 29.00
+2 x 14.50
+Amount due
+172.50
+If you've enjoyed your experience
+with us, we'd be grateful if you
+could take a moment to leave a
+avlew on Goe

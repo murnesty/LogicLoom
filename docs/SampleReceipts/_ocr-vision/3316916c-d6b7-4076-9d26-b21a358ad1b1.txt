@@ -1,0 +1,59 @@
+SOUR LITTLE 7
+50 Jalan SS 15/4b
+Seksyen 15
+Subang Jaya, Malaysia
+TABLE #
+Sour Little 7-3
+ORDER NO. 0200002
+SOUR LITTLE 7
+50 Jalan SS 15/4b
+Seksyen 15
+Subang Jaya, Malaysia
+TABLE #
+Sour Little 7-2
+ORDER NO. 0200003
+Dec 29, 2025
+13:14:27 PM
+Dine In
+Cashier Manager
+Dec 29, 2025
+Receipt: 01002656
+13:14:03 PM
+Dine In
+Receipt: 01002657
+Pax: 1
+Cashier: Manager
+Pax: 1
+RM12.90
+1 x Single
+2 x Single
+1 x Single
+A6 lemon@12.90
+RM25.80
+3 x Single
+A6 lemon
+A1 classic@13.90
+RM41.70
+RM12.90
+A5 tomato
+Sub Total
+RM54.60
+Sub Total
+RM38.70
+Svr Chrg@10%
+RM3.87
+RM0.03
+Rounding
+Total Amount RM42.60
+DUITNOW
+Thank you come again!
+RM42.60
+Svr Chrg@10%
+Total Amount
+DUITNOW
+Thank you come again!
+RM5.46
+Rounding
+RMO.04
+RM60.10
+RM60.10

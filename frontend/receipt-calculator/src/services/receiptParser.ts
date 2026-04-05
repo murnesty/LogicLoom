@@ -27,10 +27,26 @@ export function parseReceiptText(rawText: string): Receipt {
   return { shopName, taxPercent, serviceChargePercent, items, rawText };
 }
 
+function isLikelyKioskOrSessionLine(line: string): boolean {
+  const l = line.trim();
+  // Kiosk/session headers (not merchant name), e.g. "L01 DINE IN Lunch Set"
+  if (/^L\d{1,4}\s+/i.test(l)) return true;
+  if (/\bDINE\s+IN\b/i.test(l) && /\b(lunch|dinner|breakfast|set|menu)\b/i.test(l.toLowerCase())) {
+    return true;
+  }
+  return false;
+}
+
 function extractShopName(lines: string[]): string {
   for (const line of lines.slice(0, 5)) {
     const l = line.trim();
-    if (l.length > 2 && !/^\d/.test(l) && !isMetaLine(l) && !isItemHeader(l)) {
+    if (
+      l.length > 2 &&
+      !/^\d/.test(l) &&
+      !isMetaLine(l) &&
+      !isItemHeader(l) &&
+      !isLikelyKioskOrSessionLine(l)
+    ) {
       return l;
     }
   }
@@ -44,7 +60,8 @@ function isItemHeader(line: string): boolean {
   const hasItem = /\bitem\b/i.test(lower);
   const hasQty = /\b(qty|aty|quantity)\b/i.test(lower);
   const hasPrice = /\b(price|prien|amount|amt)\b/i.test(lower);
-  return hasItem && (hasQty || hasPrice);
+  const hasDiscount = /\b(disc|discount)\b/i.test(lower);
+  return hasItem && (hasQty || hasPrice || hasDiscount);
 }
 
 function isMetaLine(line: string): boolean {
@@ -81,7 +98,8 @@ function findItemSection(lines: string[]): { startIndex: number; endIndex: numbe
   return { startIndex, endIndex };
 }
 
-const END_OF_ITEMS = /^(subtotal|sub\s*total|sub-total|total|bill rounding|rounding|ounding|so\s+\d|\d+\s+qty|RM\s+\d)/i;
+const END_OF_ITEMS =
+  /^(subtotal|sub\s*total|sub-total|total|total\s+sales|total\s+amount|bill rounding|rounding|ounding|so\s+\d|\d+\s+qty|RM\s+\d|duit\s+now|tax\s+rm|payment\s+ref)/i;
 
 function isEndOfItemsLine(line: string): boolean {
   return END_OF_ITEMS.test(line.trim());
@@ -104,6 +122,20 @@ function extractItems(lines: string[]): ReceiptItem[] {
     if (isEndOfItemsLine(line)) break;
 
     const fixed = fixOcrQtyPrefix(line);
+    const trimmedForEndPrice = fixed.replace(/[|§&/\s]+$/, '').trim();
+    // Google Vision often puts the line amount on the next line: "1 菜名 $2" then "10.90"
+    const preferMultiLineFirst =
+      /^\d+\s+/.test(fixed) && !/\d+\.\d{2}\s*$/.test(trimmedForEndPrice);
+
+    if (preferMultiLineFirst) {
+      const multiFirst = tryParseMultiLineItem(lines, i);
+      if (multiFirst) {
+        items.push(multiFirst.item);
+        i += multiFirst.linesConsumed;
+        continue;
+      }
+    }
+
     const result = tryParseItemLine(fixed);
     if (result) {
       if (result.nameUncertain) {
@@ -118,11 +150,13 @@ function extractItems(lines: string[]): ReceiptItem[] {
 
     // Multi-line pattern: "qty name" on this line, standalone price on next line.
     // Common in Google Vision OCR output where prices are on separate lines.
-    const multiResult = tryParseMultiLineItem(lines, i);
-    if (multiResult) {
-      items.push(multiResult.item);
-      i += multiResult.linesConsumed;
-      continue;
+    if (!preferMultiLineFirst) {
+      const multiResult = tryParseMultiLineItem(lines, i);
+      if (multiResult) {
+        items.push(multiResult.item);
+        i += multiResult.linesConsumed;
+        continue;
+      }
     }
 
     // Tesseract / narrow receipts: item name on one line, tabular columns on the next:
@@ -150,12 +184,18 @@ function tryParseNameThenNumericColumns(
   if (index + 1 >= lines.length) return null;
 
   const numLine = lines[index + 1].trim();
-  const m = numLine.match(/^(\d+\.\d{2})\s+(\d+)\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s*$/);
+  // Strict: 11.90 1 0.00 11.90 — Tesseract may OCR discount as "000" instead of "0.00"
+  let m = numLine.match(/^(\d+\.\d{2})\s+(\d+)\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s*\.?\s*$/);
+  if (!m) {
+    m = numLine.match(/^(\d+\.\d{2})\s+(\d+)\s+(\d{3})\s+(\d+\.\d{2})\s*\.?\s*$/);
+  }
   if (!m) return null;
 
   const unitPrice = parseFloat(m[1]);
   const quantity = parseInt(m[2], 10);
-  const discount = parseFloat(m[3]);
+  const discountRaw = m[3];
+  const discount =
+    discountRaw.length === 3 && /^\d{3}$/.test(discountRaw) ? 0 : parseFloat(discountRaw);
   const amount = parseFloat(m[4]);
 
   if (quantity <= 0 || quantity >= 100 || unitPrice <= 0 || amount <= 0) return null;
@@ -308,9 +348,25 @@ function tryParseItemLine(line: string): ParseResult | null {
   // Clean up common OCR artifacts at end of line
   const cleaned = line.replace(/[|§&/\s]+$/, '').trim();
 
+  // Pattern A2: "1 SETA ... (13.00/ea) 13.00" or OCR "(13 00/ea)" before line total
+  let matchA2 = cleaned.match(
+    /^(\d+)\s+(.+?)\s+\(\s*\d+\s+\d{2}\s*\/\s*ea\s*\)\s+(\d+\.?\d{2})\s*$/i,
+  );
+  if (matchA2) {
+    const qty = parseInt(matchA2[1], 10);
+    const price = parseFloat(matchA2[3]);
+    const name = cleanItemName(matchA2[2]);
+    if (qty > 0 && qty < 100 && price > 0 && name.length > 0 && !isFooterLine(name)) {
+      return {
+        item: { id: nextId(), name, quantity: qty, unitPrice: price / qty },
+        nameUncertain: true,
+      };
+    }
+  }
+
   // Pattern A: "1 ItemName ... 14.00" (qty at start, price at end)
   // Name may be garbled Chinese OCR -- mark as uncertain so we can look for English translation
-  let match = cleaned.match(/^(\d+)\s+(.+?)\s+(\d+\.?\d{2})\s*(?:[)}\]i]*)$/);
+  let match = cleaned.match(/^(\d+)\s+(.+?)\s+(?:RM\s*)?(\d+\.?\d{2})\s*(?:[)}\]i]*)$/i);
   if (match) {
     const qty = parseInt(match[1]);
     const price = parseFloat(match[3]);
@@ -392,6 +448,7 @@ function tryParseItemLine(line: string): ParseResult | null {
 
 function cleanItemName(raw: string): string {
   return raw
+    .replace(/\(\s*\d+\s+\d{2}\s*\/\s*ea\s*\)/gi, '') // "(13 00/ea)" OCR
     .replace(/\(\d+\.?\d*\/ea\)/gi, '')   // remove "(14.00/ea)"
     .replace(/\(\d+\.?\d*\/ca\)/gi, '')   // remove "(14.50/ca)" (OCR misread)
     .replace(/\{[^}]*\}/g, '')            // remove OCR artifacts like {5 E}
@@ -400,7 +457,8 @@ function cleanItemName(raw: string): string {
     .trim();
 }
 
-const FOOTER_KEYWORDS = /^(subtotal|sub\s*total|sub-total|total|tax|gst|sst|service|tip|discount|change|cash|card|balance|rounding|ounding|amount|tendered|visa|master|qr payment|bill rounding|qty|rm\b)/i;
+const FOOTER_KEYWORDS =
+  /^(subtotal|sub\s*total|sub-total|total|total\s+sales|total\s+amount|tax|gst|sst|service|tip|discount|change|cash|card|balance|rounding|ounding|amount|tendered|visa|master|qr payment|bill rounding|duit\s+now|payment\s+ref|qty|rm\b)/i;
 
 function isFooterLine(text: string): boolean {
   return FOOTER_KEYWORDS.test(text.trim());

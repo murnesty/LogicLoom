@@ -39,6 +39,9 @@ dist-ssr/
 .env.local
 .env.*.local
 
+# ReceiptCalculator.Api — Google Vision API key and other local overrides (never commit)
+src/ReceiptCalculator.Api/appsettings.Local.json
+
 # IDE
 .idea/
 *.swp
@@ -59,6 +62,9 @@ src/ReceiptCalculator.Api/Data/
 *.trx
 *.coverage
 *.coveragexml
+
+# Generated local OCR dumps (see frontend/receipt-calculator npm run ocr:samples)
+docs/SampleReceipts/_ocr-tesseract/
 
 # Misc
 *.log

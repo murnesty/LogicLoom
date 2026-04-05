@@ -1,0 +1,84 @@
+Receipt Date: 2025.12.24 13:24:26
+Receipt #: 0002512241324268
+Cashier: Ng Sam
+Register #: 1
+Item
+Price
+Qty
+Discount
+Amount
+*Mix&Match (Promotion)
+MXP Scallops Soup, N01 Jiu Chang Noodle,
+MX07 Homdemade Mix Ball (2pcs) x1
+11.90
+Mix&Match (Promotion)
+1
+0.00
+11.90
+MXP Scallops Soup, N01 Jiu Chang Noodle,
+MX09 Dumpling Soup (2pcs) x1
+11.90
+*Mix&Match (Promotion)
+1
+0.00
+11.90
+MXP Scallops Soup, N01 Jiu Chang Noodle,
+MX10 Fried Dumpling (2pcs) x1
+*Mix & Match
+11.90
+1
+0.00
+11.90
+MXM. Thick Tomato Soup, N01 Jiu Chang
+Noodle, MX10 Fried Dumpling (2pcs), MX11
+Fried Siew Mai (2pcs)
+*Item Discount (-1.58)
+15.80
+1
+1.58
+14.22
+*Mix&Match (Promotion)
+MXP Scallops Soup, N02 Tear, MX03 Slice
+Pork x1
+11.90
+1
+0.00
+11.90
+*Mix&Match (Promotion)
+MXP Scallops Soup, N01 Jiu Chang Noodle,
+MX02 Bursting (2pcs) x1
+11.90 1
+0.00
+11.90
+*Mix & Match
+MXI Tonkotsu Soup, N02 Tear, MX01 Pork
+Ball (2 pcs), MX09 Dumpling Soup (2pcs)
+*Item Discount (-1.58)
+15.80
+1
+1.58
+14.22
+Mix&Match (Promotion)
+MXP Scallops Soup, N01 Jiu Chang Noodle,
+MX10 Fried Dumpling (2pcs) x1
+01829
+11.90
+1
+0.00
+11.90
+Total Sales (Exc Tax)
+RM 103.00
+DISCOUNT
+- RM 3.16
+Service Charge (6%)
+SST
+Rounding
+TOTAL
+MAYBANK QR
+-
+RM 5.99
+RM 0.00
+RM 0.03
+RM 105.80
+RM 105.80
+Thank you for shopping at our store

@@ -1,0 +1,73 @@
+Type
+Table:01
+Num(15)
+Name
+M3番茄鸡蛋面釀釀
+A3酸菜鱼Pickled Fish(
+#0008
+Dine-in
+Subtotal
+10.00
+28
+88
+26.00
+Small)
+白开水Water
+1
+0.80
++Cold
+G2一碗香盖饭Fried Por 12
+13.80
+k with Chillies Rice
+Bowl
+G17
+Stir-Fry 1
+13.80
+Pork Rice Bowl
+G8包菜炒肉盖饭Stir-Fr 2
+y Cabbage with Pork
+25.60
+中国茶Chinese
+Tea
+1
+1.00
++ **Cold
+G17
+Stir-Fry 1
+13.80
+Pork Rice Bowl
+E2腊肠炒饭Pork Sausag
+1
+9.00
+e Fried Rice
+中国茶Chinese Tea
+1
+1.00
++ Hot
+G6
+Sweet & 1
+12.80
+Sour Chicken Rice Bo
++ 煎蛋
+1.70
+Chinese Tea
+1
+1.00
+280
++ **Cold
+12.80
+G4肉沫茄子盖饭Stir-fr 12
+y Eggplant with Mince
+d Meat Rice Bowl
+煎蛋Fried eggg
+Product
+Total Amount
+Order ID
+Order Time
+Print Time
+1.70
+144.80
+144.80
+12260126002S9NAH2Y8
+26/01/2026 12:22pm
+26/01/2026 12:49pm
