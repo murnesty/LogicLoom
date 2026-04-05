@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MapPane } from './components/MapPane.tsx'
 import { filterPois } from './logic/filterPois.ts'
 import { searchMalaysia } from './services/nominatim.ts'
@@ -52,6 +52,18 @@ export default function App() {
   const [requireWebsite, setRequireWebsite] = useState(false)
   const [highlightKey, setHighlightKey] = useState<string | null>(null)
   const [lunchPick, setLunchPick] = useState<FoodPoi | null>(null)
+  const poiListItemRefs = useRef<Record<string, HTMLLIElement | null>>({})
+
+  useEffect(() => {
+    if (!highlightKey) return
+    const el = poiListItemRefs.current[highlightKey]
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    const id = window.requestAnimationFrame(() => {
+      el.focus({ preventScroll: true })
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [highlightKey])
   const [filtersPanelOpen, setFiltersPanelOpen] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches
   )
@@ -561,6 +573,12 @@ export default function App() {
               return (
                 <li
                   key={p.key}
+                  ref={(el) => {
+                    if (el) poiListItemRefs.current[p.key] = el
+                    else delete poiListItemRefs.current[p.key]
+                  }}
+                  id={`poi-list-${p.key.replace(/\//g, '-')}`}
+                  tabIndex={-1}
                   className={highlightKey === p.key ? 'selected' : ''}
                   onClick={() => setHighlightKey(p.key)}
                 >

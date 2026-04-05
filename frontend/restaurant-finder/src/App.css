@@ -840,6 +840,15 @@
   box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
 }
 
+.poi-list li:focus {
+  outline: none;
+}
+
+.poi-list li:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .poi-card-top {
   display: flex;
   gap: 0.6rem;
