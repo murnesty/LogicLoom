@@ -13,8 +13,9 @@ LogicLoom/
 │   ├── ReceiptCalculator.Api/     # Backend for ReceiptCalculator (ASP.NET Core)
 │   ├── Shared.Contracts/          # Shared DTOs/events for all backends
 ├── frontend/
-│   ├── history-viewer/            # React app for HistoryViewer
-│   └── receipt-calculator/        # React app for ReceiptCalculator
+│   ├── history-viewer/            # React app for HistoryViewer (WIP)
+│   ├── receipt-calculator/        # React app for ReceiptCalculator
+│   └── restaurant-finder/         # Places near you — OSM / Overpass (no backend)
 ├── docker/                        # Docker configs (optional)
 ├── docs/                          # Documentation and project plans
 ├── .gitignore
@@ -46,11 +47,11 @@ LogicLoom/
 
 - **Technology:** React + TypeScript (Vite or Create React App)
 - **Structure:**
-  - Each project has its own React app in a subfolder (e.g., `frontend/history-viewer`, `frontend/receipt-calculator`).
+  - Each project has its own React app in a subfolder (e.g., `frontend/receipt-calculator`, `frontend/restaurant-finder`).
 - **Deployment Options:**
   - **GitHub Pages (subfolder method):**
     - Build each app to a subfolder in the `gh-pages` branch.
-    - URLs: `https://<username>.github.io/LogicLoom/history-viewer/`, `https://<username>.github.io/LogicLoom/receipt-calculator/`
+    - URLs (current workflow): `https://<username>.github.io/LogicLoom/receipt-calculator/`, `https://<username>.github.io/LogicLoom/restaurant-finder/`
   - **Vercel/Netlify:**
     - Deploy each app from its subfolder for its own custom domain or subdomain.
   - **Other:**

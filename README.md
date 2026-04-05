@@ -6,8 +6,9 @@ A monorepo for multiple hobby projects with ASP.NET Core backends and React Type
 
 | Project | Description | Frontend | Backend |
 |---------|-------------|----------|---------|
-| **History Viewer** | Interactive historical map with timeline | React + TypeScript | ASP.NET Core |
+| **History Viewer** | Interactive historical map with timeline (WIP; not linked on the hub yet) | React + TypeScript | ASP.NET Core |
 | **Receipt Calculator** | Receipt management and calculations | React + TypeScript | ASP.NET Core |
+| **Places near you** | Malaysia POIs from OpenStreetMap (Overpass) — food, malls, shops | React + TypeScript | — (browser-only) |
 
 ## Project Structure
 
@@ -18,8 +19,9 @@ LogicLoom/
 │   ├── ReceiptCalculator.Api/     # Backend for Receipt Calculator
 │   └── Shared.Contracts/          # Shared DTOs/contracts
 ├── frontend/
-│   ├── history-viewer/            # React app for History Viewer
-│   └── receipt-calculator/        # React app for Receipt Calculator
+│   ├── history-viewer/            # React app for History Viewer (WIP)
+│   ├── receipt-calculator/        # React app for Receipt Calculator
+│   └── restaurant-finder/         # Places near you (OSM / Overpass)
 ├── docs/                          # Documentation
 └── .github/workflows/             # CI/CD pipelines
 ```
@@ -48,6 +50,11 @@ npm run dev
 cd frontend/receipt-calculator
 npm install
 npm run dev
+
+# Places near you (restaurant-finder)
+cd frontend/restaurant-finder
+npm install
+npm run dev
 ```
 
 ## Deployment
@@ -59,13 +66,13 @@ npm run dev
 ### Frontend (GitHub Pages)
 - Frontends are auto-deployed via GitHub Actions
 - URLs:
-  - `https://<username>.github.io/LogicLoom/history-viewer/`
   - `https://<username>.github.io/LogicLoom/receipt-calculator/`
+  - `https://<username>.github.io/LogicLoom/restaurant-finder/`
 
 ## Environment Variables
 
 ### Frontend (GitHub Actions → build)
-- `RECEIPT_CALCULATOR_API_URL` / `HISTORY_VIEWER_API_URL` — repo **Variables** (public URLs). Receipt build sets `VITE_VISION_PROXY_URL` from the receipt API URL. Enhanced OCR is **proxy-only**; Google key is only on the server (`Vision__ApiKey` on Railway or user-secrets locally).
+- `RECEIPT_CALCULATOR_API_URL` / `HISTORY_VIEWER_API_URL` — repo **Variables** (public URLs) for apps that call an API. Receipt build sets `VITE_VISION_PROXY_URL` from the receipt API URL. Enhanced OCR is **proxy-only**; Google key is only on the server (`Vision__ApiKey` on Railway or user-secrets locally). The Places app is static-only (optional `VITE_OVERPASS_URL` / `VITE_NOMINATIM_URL` if you fork the workflow).
 
 ## Documentation
 

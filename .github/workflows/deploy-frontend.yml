@@ -28,17 +28,6 @@ jobs:
         with:
           node-version: '20'
 
-      # Build History Viewer
-      - name: Install dependencies (history-viewer)
-        working-directory: frontend/history-viewer
-        run: npm install
-
-      - name: Build (history-viewer)
-        working-directory: frontend/history-viewer
-        run: npm run build
-        env:
-          VITE_API_URL: ${{ vars.HISTORY_VIEWER_API_URL }}
-
       # Build Receipt Calculator
       - name: Install dependencies (receipt-calculator)
         working-directory: frontend/receipt-calculator
@@ -55,13 +44,22 @@ jobs:
           VITE_ADSENSE_CLIENT: ${{ vars.RECEIPT_CALC_ADSENSE_CLIENT }}
           VITE_ADSENSE_SLOT: ${{ vars.RECEIPT_CALC_ADSENSE_SLOT }}
 
+      # Build Restaurant Finder (frontend-only; optional env overrides for OSM endpoints)
+      - name: Install dependencies (restaurant-finder)
+        working-directory: frontend/restaurant-finder
+        run: npm install
+
+      - name: Build (restaurant-finder)
+        working-directory: frontend/restaurant-finder
+        run: npm run build
+
       # Combine builds into single pages folder
       - name: Prepare Pages
         run: |
-          mkdir -p _site/history-viewer
           mkdir -p _site/receipt-calculator
-          cp -r frontend/history-viewer/dist/* _site/history-viewer/
+          mkdir -p _site/restaurant-finder
           cp -r frontend/receipt-calculator/dist/* _site/receipt-calculator/
+          cp -r frontend/restaurant-finder/dist/* _site/restaurant-finder/
           cp frontend/index.html _site/index.html
 
       - name: Upload artifact

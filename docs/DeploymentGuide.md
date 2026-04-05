@@ -12,8 +12,8 @@ This guide explains how to deploy the LogicLoom monorepo with:
 ┌─────────────────────────────────────────────────────────────────────┐
 │                           GitHub Pages                               │
 │  https://murnesty.github.io/LogicLoom/                              │
-│  ├── /history-viewer/     → React App (History Viewer)              │
-│  └── /receipt-calculator/ → React App (Receipt Calculator)         │
+│  ├── /receipt-calculator/ → React App (Receipt Calculator)         │
+│  └── /restaurant-finder/  → Places near you (OSM / Overpass)        │
 └─────────────────────────────────────────────────────────────────────┘
                               │
                               │ API Calls (CORS enabled)
@@ -114,25 +114,19 @@ Your repository already has the GitHub Actions workflow set up:
 ### How It Works
 
 1. On push to `main` (with changes in `frontend/**`), the workflow:
-   - Builds `frontend/history-viewer` → outputs to `_site/history-viewer/`
    - Builds `frontend/receipt-calculator` → outputs to `_site/receipt-calculator/`
+   - Builds `frontend/restaurant-finder` → outputs to `_site/restaurant-finder/`
    - Deploys combined `_site/` to GitHub Pages
 
 2. URLs after deployment:
-   - `https://murnesty.github.io/LogicLoom/history-viewer/`
    - `https://murnesty.github.io/LogicLoom/receipt-calculator/`
+   - `https://murnesty.github.io/LogicLoom/restaurant-finder/`
+
+(History Viewer is not included in this workflow while it is WIP; build and copy it manually or extend the workflow when it ships.)
 
 ### Vite Base Path Configuration ✅
 
-Already configured in each frontend:
-
-```typescript
-// frontend/history-viewer/vite.config.ts
-export default defineConfig({
-  plugins: [react()],
-  base: '/LogicLoom/history-viewer/',
-})
-```
+Each deployed app sets `base` to its subfolder, e.g. `frontend/receipt-calculator/vite.config.ts` and `frontend/restaurant-finder/vite.config.ts` use `/LogicLoom/receipt-calculator/` and `/LogicLoom/restaurant-finder/` respectively.
 
 ---
 
