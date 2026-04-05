@@ -1,16 +1,14 @@
+import { useRef, useState, useCallback } from 'react';
 import type { OcrService } from '../services/ocrService';
 import ImageUpload from './ImageUpload';
+import { isLikelyImageFile, readFileAsDataUrl } from '../utils/imageFiles';
 
 interface ReceiptPhotoPanelProps {
   ocrService: OcrService;
   googleVisionService: OcrService | null;
   imagePreviews: string[];
   rawText: string;
-  replacePhotosOpen: boolean;
-  replaceUploadKey: number;
   onImageReady: (previews: string[], files: File[]) => void;
-  onStartReplacePhotos: () => void;
-  onCancelReplacePhotos: () => void;
   onReplaceImageReady: (previews: string[], files: File[]) => void;
   onTesseractOcr: () => void;
   onGoogleOcr: () => void;
@@ -28,11 +26,7 @@ export default function ReceiptPhotoPanel({
   googleVisionService,
   imagePreviews,
   rawText,
-  replacePhotosOpen,
-  replaceUploadKey,
   onImageReady,
-  onStartReplacePhotos,
-  onCancelReplacePhotos,
   onReplaceImageReady,
   onTesseractOcr,
   onGoogleOcr,
@@ -47,26 +41,43 @@ export default function ReceiptPhotoPanel({
   const canRunOcr = hasImage && !ocrBusy && !parseBusy;
   const googleAvailable = googleVisionService !== null;
 
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [dragOverReceipt, setDragOverReceipt] = useState(false);
+
+  const applyReplacementFile = useCallback(
+    async (file: File) => {
+      if (!isLikelyImageFile(file)) return;
+      const dataUrl = await readFileAsDataUrl(file);
+      onReplaceImageReady([dataUrl], [file]);
+    },
+    [onReplaceImageReady],
+  );
+
+  const handleReplaceFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) void applyReplacementFile(file);
+  };
+
+  const handleReceiptDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverReceipt(false);
+    const file = Array.from(e.dataTransfer.files).find(isLikelyImageFile);
+    if (file) void applyReplacementFile(file);
+  };
+
   return (
     <aside className="receipt-preview-panel receipt-photo-panel">
-      {replacePhotosOpen ? (
-        <div className="capture-replace-panel">
-          <h4 className="capture-panel-title">New photo</h4>
-          <p className="capture-replace-lead">
-            Pick one image — it appears on the left when ready. Then choose local or cloud scan below.
-          </p>
-          <button type="button" className="btn btn-text capture-replace-cancel" onClick={onCancelReplacePhotos}>
-            Cancel — keep current photo
-          </button>
-          <ImageUpload
-            key={replaceUploadKey}
-            compact
-            scanOnUpload={false}
-            ocrService={ocrService}
-            onImageReady={onReplaceImageReady}
-          />
-        </div>
-      ) : !hasImage ? (
+      <input
+        ref={replaceInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        aria-hidden
+        onChange={handleReplaceFileInputChange}
+      />
+
+      {!hasImage ? (
         <>
           <h4 className="panel-title">Receipt photo</h4>
           <ImageUpload scanOnUpload={false} ocrService={ocrService} onImageReady={onImageReady} />
@@ -74,17 +85,45 @@ export default function ReceiptPhotoPanel({
       ) : (
         <>
           <h4 className="panel-title">Receipt photo</h4>
-          <div className="preview-scroll capture-preview-stack">
+          <div
+            className={['capture-preview-stack', 'receipt-photo-drop-zone', dragOverReceipt ? 'drag-over' : '']
+              .filter(Boolean)
+              .join(' ')}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'copy';
+              setDragOverReceipt(true);
+            }}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragOverReceipt(true);
+            }}
+            onDragLeave={(e) => {
+              if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+              setDragOverReceipt(false);
+            }}
+            onDrop={handleReceiptDrop}
+            role="region"
+            aria-label="Receipt preview — drop an image file here to replace"
+          >
             {imagePreviews.map((src, i) => (
-              <img key={i} src={src} alt="Receipt" className="preview-full" />
+              <img key={i} src={src} alt="Receipt" className="preview-full" draggable={false} />
             ))}
           </div>
           <div className="capture-photo-toolbox" aria-label="Photo actions">
             <p className="capture-toolbox-title">Photo</p>
             <div className="capture-visual-actions">
-              <button type="button" className="btn btn-outline btn-compact" onClick={onStartReplacePhotos}>
+              <button
+                type="button"
+                className="btn btn-outline btn-compact"
+                onClick={() => replaceInputRef.current?.click()}
+              >
                 Use a different photo
               </button>
+              <p className="capture-toolbox-hint">
+                Opens the file picker immediately. You can also <strong>drag and drop</strong> a new image onto the
+                receipt above.
+              </p>
             </div>
           </div>
 

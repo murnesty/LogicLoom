@@ -53,6 +53,50 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      resolve(dataUrl.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Decodes JPEG/PNG with EXIF orientation applied so pixels are upright before Cloud Vision.
+ * Falls back to raw base64 if `createImageBitmap` fails or is unavailable.
+ */
+async function fileToBase64ExifUpright(file: File): Promise<string> {
+  if (typeof createImageBitmap !== 'function') {
+    return fileToBase64(file);
+  }
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return fileToBase64(file);
+    }
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((b) => resolve(b), 'image/png');
+    });
+    if (!blob) {
+      return fileToBase64(file);
+    }
+    return blobToBase64(blob);
+  } catch {
+    return fileToBase64(file);
+  }
+}
+
 /**
  * Cloud scan (Google Vision) goes through ReceiptCalculator.Api `POST /api/vision/document-text`.
  * API key and scan limits live on the server only.
@@ -65,7 +109,7 @@ class ProxiedVisionOcrService implements OcrService {
     const totalFiles = files.length;
     for (let i = 0; i < totalFiles; i++) {
       onProgress?.(i / totalFiles, `Preparing image ${i + 1} of ${totalFiles}...`);
-      base64s.push(await fileToBase64(files[i]));
+      base64s.push(await fileToBase64ExifUpright(files[i]));
     }
 
     const url = `${this.baseUrl}/api/vision/document-text`;

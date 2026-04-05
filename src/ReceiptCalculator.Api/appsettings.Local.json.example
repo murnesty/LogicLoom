@@ -1,6 +1,7 @@
 {
   "Vision": {
     "ApiKey": "YOUR_GOOGLE_CLOUD_API_KEY_HERE",
-    "DisableScanLimits": true
+    "DisableScanLimits": true,
+    "LanguageHints": [ "en", "ms" ]
   }
 }

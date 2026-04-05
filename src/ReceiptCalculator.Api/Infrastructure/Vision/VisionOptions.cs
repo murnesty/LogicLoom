@@ -27,6 +27,11 @@ public class VisionOptions
     public int MaxImagesPerRequest { get; set; } = 5;
 
     /// <summary>
+    /// BCP-47 language hints for <c>images:annotate</c> (e.g. <c>en</c>, <c>ms</c>). Helps with mixed-language receipts.
+    /// </summary>
+    public List<string> LanguageHints { get; set; } = new() { "en", "ms" };
+
+    /// <summary>
     /// When true, daily/monthly SQLite scan counters are not enforced (e.g. Production profile on localhost).
     /// In ASP.NET Core Development hosting, limits are skipped automatically regardless of this flag.
     /// </summary>

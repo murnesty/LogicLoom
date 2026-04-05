@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 
 namespace ReceiptCalculator.Api.Infrastructure.Vision;
@@ -22,16 +23,27 @@ public sealed class GoogleVisionDocumentClient
         if (string.IsNullOrEmpty(key))
             throw new InvalidOperationException("Vision API key is not configured on the server.");
 
+        var hints = (_options.Value.LanguageHints ?? new List<string>())
+            .Select(h => h.Trim())
+            .Where(h => h.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
         var payload = new
         {
             requests = base64Images.Select(b64 => new
             {
                 image = new { content = b64 },
                 features = new[] { new { type = "DOCUMENT_TEXT_DETECTION" } },
+                imageContext = hints.Length > 0 ? new { languageHints = hints } : null,
             }).ToArray(),
         };
 
-        var body = JsonSerializer.Serialize(payload);
+        var jsonOptions = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        };
+        var body = JsonSerializer.Serialize(payload, jsonOptions);
         var url = $"https://vision.googleapis.com/v1/images:annotate?key={Uri.EscapeDataString(key)}";
 
         using var content = new StringContent(body, Encoding.UTF8, "application/json");
@@ -70,12 +82,13 @@ public sealed class GoogleVisionDocumentClient
                     throw new InvalidOperationException(m);
                 }
 
-                if (item.TryGetProperty("fullTextAnnotation", out var fta) &&
-                    fta.TryGetProperty("text", out var t))
+                if (item.TryGetProperty("fullTextAnnotation", out var fta))
                 {
-                    var s = t.GetString();
+                    var s = VisionFullTextAnnotationParser.ExtractText(fta);
                     if (!string.IsNullOrWhiteSpace(s))
-                        texts.Add(s.Trim());
+                    {
+                        texts.Add(s);
+                    }
                 }
             }
         }

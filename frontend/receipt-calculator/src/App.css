@@ -637,6 +637,17 @@
   overflow-y: auto;
 }
 
+.receipt-photo-drop-zone {
+  border-radius: 8px;
+  transition: box-shadow 0.15s ease, outline-color 0.15s ease;
+}
+
+.receipt-photo-drop-zone.drag-over {
+  box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.45);
+  outline: 2px dashed rgba(74, 111, 165, 0.55);
+  outline-offset: 2px;
+}
+
 .capture-photo-toolbox {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
@@ -692,36 +703,6 @@
 
 .capture-post-scan__editor .raw-text-section:has(.ocr-compare) {
   max-width: min(100%, 72rem);
-}
-
-.capture-replace-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.capture-replace-lead {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: #555;
-}
-
-.capture-replace-cancel {
-  align-self: flex-start;
-  margin-bottom: 0.25rem;
-}
-
-.capture-replace-hold {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.capture-replace-readonly-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #666;
 }
 
 .raw-text-area--hold {

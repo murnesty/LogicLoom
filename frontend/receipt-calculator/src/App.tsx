@@ -34,8 +34,6 @@ function App() {
   const googleVisionService = useMemo(() => createGoogleVisionOcrService(), []);
   const serverParseEnabled = useMemo(() => getReceiptApiBaseUrl() !== null, []);
 
-  const [replacePhotosOpen, setReplacePhotosOpen] = useState(false);
-  const [replaceUploadKey, setReplaceUploadKey] = useState(0);
   const [rawText, setRawText] = useState('');
   const [receipt, setReceipt] = useState<Receipt>(emptyReceipt);
   const [splitItems, setSplitItems] = useState<SplitItem[]>([]);
@@ -89,19 +87,9 @@ function App() {
     setGoogleError('');
   };
 
-  const handleStartReplacePhotos = () => {
-    setReplaceUploadKey((k) => k + 1);
-    setReplacePhotosOpen(true);
-  };
-
-  const handleCancelReplacePhotos = () => {
-    setReplacePhotosOpen(false);
-  };
-
   const handleReplaceImageReady = (previews: string[], files: File[]) => {
     setImagePreviews(previews);
     setUploadedFiles(files);
-    setReplacePhotosOpen(false);
     clearParsedFromNewImage();
     setTesseractError('');
     setGoogleError('');
@@ -153,7 +141,6 @@ function App() {
   };
 
   const handleReset = () => {
-    setReplacePhotosOpen(false);
     setRawText('');
     setReceipt(emptyReceipt);
     setSplitItems([]);
@@ -199,11 +186,7 @@ function App() {
             googleVisionService={googleVisionService}
             imagePreviews={imagePreviews}
             rawText={rawText}
-            replacePhotosOpen={replacePhotosOpen}
-            replaceUploadKey={replaceUploadKey}
             onImageReady={handleImageReady}
-            onStartReplacePhotos={handleStartReplacePhotos}
-            onCancelReplacePhotos={handleCancelReplacePhotos}
             onReplaceImageReady={handleReplaceImageReady}
             onTesseractOcr={handleTesseractOcr}
             onGoogleOcr={handleGoogleOcr}
