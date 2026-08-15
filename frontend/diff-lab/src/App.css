@@ -184,6 +184,31 @@ textarea {
   width: 100%;
 }
 
+.diff-out .op,
+.diff-out .op-mod-inline {
+  white-space: pre;
+  word-break: normal;
+}
+
+.diff-out.wrap .op,
+.diff-out.wrap .op-mod-inline {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: auto;
+  flex: 0 0 auto;
+}
+
+.checkbox-label input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
 .diff-split {
   display: flex;
   flex-direction: column;
@@ -248,9 +273,7 @@ textarea {
 }
 
 .op {
-  white-space: pre-wrap;
   padding: 0.05rem 0.2rem;
-  word-break: break-word;
 }
 
 .op-mark {
