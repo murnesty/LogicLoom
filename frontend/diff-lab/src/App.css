@@ -199,14 +199,14 @@ textarea {
 }
 
 .diff-out .op,
-.diff-out .op-mod-inline {
+.diff-out .op-mod-line {
   white-space: pre;
   word-break: normal;
   overflow-wrap: normal;
 }
 
 .diff-scroll.wrap .diff-out .op,
-.diff-scroll.wrap .diff-out .op-mod-inline {
+.diff-scroll.wrap .diff-out .op-mod-line {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -218,7 +218,7 @@ textarea {
 }
 
 .diff-scroll:not(.wrap) .diff-out .op,
-.diff-scroll:not(.wrap) .diff-out .op-mod {
+.diff-scroll:not(.wrap) .diff-out .op-mod-pair {
   width: max-content;
   min-width: 100%;
 }
@@ -291,14 +291,6 @@ textarea {
   background: rgba(26, 61, 42, 0.35);
 }
 
-.pane-mod {
-  background: #1c2636;
-}
-
-.diff-split-mod .op-mod-hdr {
-  font-size: 0.75rem;
-}
-
 .op {
   padding: 0.05rem 0.2rem;
 }
@@ -325,17 +317,14 @@ textarea {
   padding: 0.25rem 0.5rem;
 }
 
-.op-mod {
-  background: #243044;
-  border-left: 3px solid #e6b84d;
-  margin: 0.25rem 0;
-  padding: 0.25rem 0.35rem;
+.op-mod-pair .op {
+  display: flex;
+  align-items: baseline;
 }
 
-.op-mod-hdr {
-  color: var(--warn);
-  font-weight: 600;
-  margin-bottom: 0.2rem;
+.op-mod-line {
+  flex: 1;
+  min-width: 0;
 }
 
 .tok-keep {
@@ -343,10 +332,10 @@ textarea {
 }
 
 .tok-del {
-  background: var(--del);
+  background: rgba(255, 120, 120, 0.35);
   text-decoration: line-through;
 }
 
 .tok-ins {
-  background: var(--ins);
+  background: rgba(120, 220, 160, 0.35);
 }

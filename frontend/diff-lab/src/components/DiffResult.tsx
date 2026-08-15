@@ -6,30 +6,43 @@ function isModifyHdr(op: DiffOp): boolean {
   return op.kind === 'hdr' && op.text.startsWith('~ modified')
 }
 
-function isFullPathLine(op: DiffOp): boolean {
-  return (
-    (op.kind === 'keep' || op.kind === 'del' || op.kind === 'ins') &&
-    op.text.startsWith('/') &&
-    op.text.includes(' = ')
-  )
+/** Word-refine tokens are whitespace-only or have no internal whitespace. */
+function isWordRefineToken(op: DiffOp): boolean {
+  if (op.kind === 'hdr') return false
+  return /^\s+$/.test(op.text) || !/\s/.test(op.text)
+}
+
+/** Closes a word-refine token run so later full lines are not swallowed. */
+function isModifyEnd(op: DiffOp): boolean {
+  return op.kind === 'hdr' && op.text === '~.'
 }
 
 type Row =
   | { type: 'single'; op: DiffOp }
   | { type: 'modify'; header: DiffOp; inline: DiffOp[] }
 
-function groupOps(ops: DiffOp[]): Row[] {
+/**
+ * Group word-refine tokens under their `~ modified` header.
+ * Stop at `~.`, any hdr, or the first full line (has mixed whitespace) —
+ * so later XML lines can never be mashed into one inline block.
+ */
+export function groupOps(ops: DiffOp[]): Row[] {
   const rows: Row[] = []
   let i = 0
   while (i < ops.length) {
     const op = ops[i]
+    if (isModifyEnd(op)) {
+      i++
+      continue
+    }
     if (isModifyHdr(op)) {
       const inline: DiffOp[] = []
       i++
-      while (i < ops.length && ops[i].kind !== 'hdr' && !isFullPathLine(ops[i])) {
+      while (i < ops.length && isWordRefineToken(ops[i])) {
         inline.push(ops[i])
         i++
       }
+      if (i < ops.length && isModifyEnd(ops[i])) i++
       rows.push({ type: 'modify', header: op, inline })
       continue
     }
@@ -64,6 +77,7 @@ function InlineTokens({ tokens, side }: { tokens: DiffOp[]; side?: 'left' | 'rig
   )
 }
 
+/** Word-refine as two normal rows (− old / + new), not one combined block. */
 function UnifiedRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
   return (
     <>
@@ -78,10 +92,18 @@ function UnifiedRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
           )
         }
         return (
-          <div key={i} className="op op-mod">
-            <div className="op-mod-hdr">{row.header.text}</div>
-            <div className="op-mod-inline">
-              <InlineTokens tokens={row.inline} />
+          <div key={i} className="op-mod-pair">
+            <div className="op op-del">
+              <span className="op-mark">-</span>
+              <span className="op-mod-line">
+                <InlineTokens tokens={row.inline} side="left" />
+              </span>
+            </div>
+            <div className="op op-ins">
+              <span className="op-mark">+</span>
+              <span className="op-mod-line">
+                <InlineTokens tokens={row.inline} side="right" />
+              </span>
             </div>
           </div>
         )
@@ -129,17 +151,21 @@ function SplitRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
           )
         }
         return (
-          <div key={i} className="diff-split-row diff-split-mod">
-            <div className="diff-pane pane-mod">
-              <div className="op-mod-hdr">{row.header.text}</div>
-              <div className="op-mod-inline">
-                <InlineTokens tokens={row.inline} side="left" />
+          <div key={i} className="diff-split-row">
+            <div className="diff-pane pane-del">
+              <div className="op op-del">
+                <span className="op-mark">-</span>
+                <span className="op-mod-line">
+                  <InlineTokens tokens={row.inline} side="left" />
+                </span>
               </div>
             </div>
-            <div className="diff-pane pane-mod">
-              <div className="op-mod-hdr">{row.header.text}</div>
-              <div className="op-mod-inline">
-                <InlineTokens tokens={row.inline} side="right" />
+            <div className="diff-pane pane-ins">
+              <div className="op op-ins">
+                <span className="op-mark">+</span>
+                <span className="op-mod-line">
+                  <InlineTokens tokens={row.inline} side="right" />
+                </span>
               </div>
             </div>
           </div>

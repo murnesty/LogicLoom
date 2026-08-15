@@ -4,6 +4,8 @@ import {
   listAlgorithms,
   COARSE_ALGO_IDS,
   FINE_ALGO_IDS,
+  STRUCTURE_STRATEGY_IDS,
+  STRUCTURE_LABELS,
 } from '../engine'
 
 const LABELS: Record<string, string> = {
@@ -18,6 +20,8 @@ const LABELS: Record<string, string> = {
 const algoLabel = (id: string) =>
   listAlgorithms().find((a) => a.id === id)?.label ?? id
 
+const structuredPresets = new Set(['structured', 'recommended'])
+
 export function PresetBar({
   detection,
   recommendation,
@@ -27,6 +31,8 @@ export function PresetBar({
   onCoarse,
   fine,
   onFine,
+  structure,
+  onStructure,
   layout,
   onLayout,
   wrap,
@@ -42,6 +48,8 @@ export function PresetBar({
   onCoarse: (id: string) => void
   fine: string
   onFine: (id: string) => void
+  structure: string
+  onStructure: (id: string) => void
   layout: 'unified' | 'split'
   onLayout: (layout: 'unified' | 'split') => void
   wrap: boolean
@@ -49,11 +57,13 @@ export function PresetBar({
   onRun: () => void
   running: boolean
 }) {
+  const showStructure = structuredPresets.has(preset)
   return (
     <div className="preset-bar">
       {detection && (
         <p>
-          Detected: <strong>{detection.kind}</strong> ({detection.confidence}) — {detection.detail}
+          Detected: <strong>{detection.kind}</strong> ({detection.confidence}) —{' '}
+          {detection.detail}
         </p>
       )}
       {recommendation && (
@@ -71,8 +81,20 @@ export function PresetBar({
           ))}
         </select>
       </label>
+      {showStructure && (
+        <label>
+          Structure strategy (JSON/XML)
+          <select value={structure} onChange={(e) => onStructure(e.target.value)}>
+            {STRUCTURE_STRATEGY_IDS.map((id) => (
+              <option key={id} value={id}>
+                {STRUCTURE_LABELS[id]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label>
-        Coarse algo (whole doc / lines)
+        Coarse algo (line SES)
         <select value={coarse} onChange={(e) => onCoarse(e.target.value)}>
           {COARSE_ALGO_IDS.map((id) => (
             <option key={id} value={id}>

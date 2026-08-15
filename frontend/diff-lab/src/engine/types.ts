@@ -17,15 +17,21 @@ export type Algorithm = {
   diff: (a: string[], b: string[], equals?: EqualsFn) => DiffOp[]
 }
 
-/** Coarse = whole doc / lines; fine = modified-line word refine. */
+/**
+ * Coarse = line/token SES after flatten (or text lines).
+ * Fine = modified-line word refine.
+ * Structure = how JSON/XML is aligned before/instead of flat SES (structured preset).
+ */
 export type DiffOptions = {
   coarse: string
   fine: string
+  structure: string
 }
 
 export const DEFAULT_DIFF_OPTIONS: DiffOptions = {
   coarse: 'myers',
   fine: 'myers',
+  structure: 'path-key',
 }
 
 export const COARSE_ALGO_IDS = [
