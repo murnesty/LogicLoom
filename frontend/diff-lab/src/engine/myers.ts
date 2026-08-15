@@ -1,13 +1,12 @@
-import type { Algorithm, DiffOp } from './types'
-import { registerAlgorithm } from './registry'
+import type { Algorithm, DiffOp, EqualsFn } from './types'
 
-const defaultEq = (x: string, y: string) => x === y
+const defaultEq: EqualsFn = (x, y) => x === y
 
 /** Myers shortest edit script via DP (port of DiffCli). */
 export function myersSes(
   a: string[],
   b: string[],
-  equals: (x: string, y: string) => boolean = defaultEq
+  equals: EqualsFn = defaultEq
 ): DiffOp[] {
   const n = a.length
   const m = b.length
@@ -65,6 +64,8 @@ export function myersSes(
   return ops
 }
 
-export const myersAlgorithm: Algorithm = { id: 'myers', diff: myersSes }
-
-registerAlgorithm(myersAlgorithm)
+export const myersAlgorithm: Algorithm = {
+  id: 'myers',
+  label: 'Myers / SES',
+  diff: myersSes,
+}

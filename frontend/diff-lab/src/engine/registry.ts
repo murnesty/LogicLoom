@@ -1,4 +1,5 @@
-import type { Algorithm, Detection, DiffOp, Preset } from './types'
+import type { Algorithm, Detection, DiffOp, DiffOptions, Preset } from './types'
+import { DEFAULT_DIFF_OPTIONS } from './types'
 
 export const algorithmRegistry = new Map<string, Algorithm>()
 export const presetRegistry = new Map<string, Preset>()
@@ -15,11 +16,12 @@ export function runPreset(
   id: string,
   a: string,
   b: string,
-  detection: Detection
+  detection: Detection,
+  options: DiffOptions = DEFAULT_DIFF_OPTIONS
 ): DiffOp[] {
   const preset = presetRegistry.get(id)
   if (!preset) throw new Error(`Unknown preset '${id}'`)
-  return preset.run(a, b, detection)
+  return preset.run(a, b, detection, options)
 }
 
 export function listPresetIds(): string[] {

@@ -6,6 +6,7 @@ import {
   listUnionEntries,
   loadZipPathsFromBuffer,
   readZipEntryFromBuffer,
+  DEFAULT_DIFF_OPTIONS,
   type Detection,
   type DiffOp,
   type EntryAvailability,
@@ -35,6 +36,8 @@ export default function App() {
   const [pasteA, setPasteA] = useState('')
   const [pasteB, setPasteB] = useState('')
   const [preset, setPreset] = useState('recommended')
+  const [coarse, setCoarse] = useState(DEFAULT_DIFF_OPTIONS.coarse)
+  const [fine, setFine] = useState(DEFAULT_DIFF_OPTIONS.fine)
   const [detection, setDetection] = useState<Detection | null>(null)
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null)
   const [ops, setOps] = useState<DiffOp[] | null>(null)
@@ -156,7 +159,7 @@ export default function App() {
       const rec = recommend(d)
       setDetection(d)
       setRecommendation(rec)
-      const result = runPreset(preset, textA, textB, d)
+      const result = runPreset(preset, textA, textB, d, { coarse, fine })
       if (availNote) {
         setOps([{ kind: 'hdr', text: `[${availNote}]` }, ...result])
       } else {
@@ -219,6 +222,10 @@ export default function App() {
         recommendation={recommendation}
         preset={preset}
         onPreset={setPreset}
+        coarse={coarse}
+        onCoarse={setCoarse}
+        fine={fine}
+        onFine={setFine}
         layout={layout}
         onLayout={setLayout}
         wrap={wrap}

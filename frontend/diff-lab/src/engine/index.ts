@@ -1,8 +1,9 @@
-/** Side-effect imports: register myers + builtins. */
-import './myers'
+/** Side-effect imports: register algos then presets. */
+import './algoRegistry'
 import './presets'
 
 export type * from './types'
+export { DEFAULT_DIFF_OPTIONS, COARSE_ALGO_IDS, FINE_ALGO_IDS } from './types'
 export { myersSes } from './myers'
 export { splitLines, tokenizeWords, leadingWsEqual } from './tokens'
 export { flattenJson, flattenXml } from './flatten'
@@ -16,6 +17,7 @@ export {
   runPreset,
   listPresetIds,
 } from './registry'
+export { listAlgorithms, runAlgo, normalizeOptions } from './algoRegistry'
 export {
   listUnionEntries,
   resolveEntry,

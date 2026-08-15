@@ -1,10 +1,10 @@
-import type { Detection, DiffOp } from './types'
+import type { Detection, DiffOp, DiffOptions, EqualsFn } from './types'
 import { registerPreset, runPreset } from './registry'
-import { myersSes } from './myers'
 import { leadingWsEqual, splitLines, tokenizeWords } from './tokens'
 import { flattenJson, flattenXml, tryParseJson, tryParseXml } from './flatten'
 import { recommend } from './detect'
 import { tryPretty } from './pretty'
+import { normalizeOptions, runAlgo } from './algoRegistry'
 
 /** Path key for flattened lines: everything before first ` = `. */
 export function pathKey(line: string): string {
@@ -12,24 +12,17 @@ export function pathKey(line: string): string {
   return i >= 0 ? line.slice(0, i) : line
 }
 
-function wordRefineOps(oldL: string, newL: string): DiffOp[] {
-  return myersSes(tokenizeWords(oldL), tokenizeWords(newL)).map((w) => ({
+function wordRefineOps(oldL: string, newL: string, fine: string): DiffOp[] {
+  return runAlgo(fine, tokenizeWords(oldL), tokenizeWords(newL)).map((w) => ({
     kind: w.kind,
     text: w.text.replace(/\n/g, '⏎'),
   }))
 }
 
-function lineThenWord(a: string, b: string, ignoreLeadingWs: boolean): DiffOp[] {
-  const la = splitLines(a)
-  const lb = splitLines(b)
-  const eq = ignoreLeadingWs ? leadingWsEqual : (x: string, y: string) => x === y
-  return refineAdjacentLineEdits(myersSes(la, lb, eq), eq)
-}
-
-/** Collapse adjacent del/ins (any lines) into modify + word Myers. */
 function refineAdjacentLineEdits(
   ses: DiffOp[],
-  eq: (x: string, y: string) => boolean
+  eq: EqualsFn,
+  fine: string
 ): DiffOp[] {
   const ops: DiffOp[] = []
   for (let i = 0; i < ses.length; i++) {
@@ -45,8 +38,8 @@ function refineAdjacentLineEdits(
       oldL = next.text
     }
     if (oldL !== null && newL !== null && oldL.length > 0 && newL.length > 0 && !eq(oldL, newL)) {
-      ops.push({ kind: 'hdr', text: '~ modified line' })
-      ops.push(...wordRefineOps(oldL, newL))
+      ops.push({ kind: 'hdr', text: `~ modified line [${fine}]` })
+      ops.push(...wordRefineOps(oldL, newL, fine))
       i++
       continue
     }
@@ -55,11 +48,7 @@ function refineAdjacentLineEdits(
   return ops
 }
 
-/**
- * For structured path lines: pair del+ins that share the same path key
- * (even if not adjacent), emit ~ modified + word Myers.
- */
-export function refineSamePathEdits(ses: DiffOp[]): DiffOp[] {
+export function refineSamePathEdits(ses: DiffOp[], fine = 'myers'): DiffOp[] {
   const used = new Set<number>()
   const byKey = new Map<string, { dels: number[]; ins: number[] }>()
 
@@ -99,8 +88,8 @@ export function refineSamePathEdits(ses: DiffOp[]): DiffOp[] {
       const delOp = op.kind === 'del' ? op : ses[partner]
       const insOp = op.kind === 'ins' ? op : ses[partner]
       const key = pathKey(delOp.text)
-      ops.push({ kind: 'hdr', text: `~ modified ${key}` })
-      ops.push(...wordRefineOps(delOp.text, insOp.text))
+      ops.push({ kind: 'hdr', text: `~ modified ${key} [${fine}]` })
+      ops.push(...wordRefineOps(delOp.text, insOp.text, fine))
       continue
     }
     ops.push(op)
@@ -108,78 +97,122 @@ export function refineSamePathEdits(ses: DiffOp[]): DiffOp[] {
   return ops
 }
 
-function structuredOrText(a: string, b: string, d: Detection): DiffOp[] {
+function lineThenWord(
+  a: string,
+  b: string,
+  ignoreLeadingWs: boolean,
+  options: DiffOptions
+): DiffOp[] {
+  const opts = normalizeOptions(options)
+  const la = splitLines(a)
+  const lb = splitLines(b)
+  const eq: EqualsFn = ignoreLeadingWs ? leadingWsEqual : (x, y) => x === y
+  const ses = runAlgo(opts.coarse, la, lb, eq)
+  return refineAdjacentLineEdits(ses, eq, opts.fine)
+}
+
+function structuredOrText(
+  a: string,
+  b: string,
+  d: Detection,
+  options: DiffOptions
+): DiffOp[] {
+  const opts = normalizeOptions(options)
   try {
     if (d.kind === 'json' || (tryParseJson(a) && tryParseJson(b))) {
-      const ops: DiffOp[] = [{ kind: 'hdr', text: '[structured JSON paths]' }]
-      ops.push(...refineSamePathEdits(myersSes(flattenJson(a), flattenJson(b))))
+      const ops: DiffOp[] = [
+        { kind: 'hdr', text: `[structured JSON paths · coarse=${opts.coarse}]` },
+      ]
+      ops.push(
+        ...refineSamePathEdits(
+          runAlgo(opts.coarse, flattenJson(a), flattenJson(b)),
+          opts.fine
+        )
+      )
       return ops
     }
     if (d.kind === 'xml' || (tryParseXml(a) && tryParseXml(b))) {
-      const ops: DiffOp[] = [{ kind: 'hdr', text: '[structured XML paths]' }]
-      ops.push(...refineSamePathEdits(myersSes(flattenXml(a), flattenXml(b))))
+      const ops: DiffOp[] = [
+        { kind: 'hdr', text: `[structured XML paths · coarse=${opts.coarse}]` },
+      ]
+      ops.push(
+        ...refineSamePathEdits(
+          runAlgo(opts.coarse, flattenXml(a), flattenXml(b)),
+          opts.fine
+        )
+      )
       return ops
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     return [
       { kind: 'hdr', text: `[structured failed: ${msg} → text]` },
-      ...lineThenWord(a, b, false),
+      ...lineThenWord(a, b, false, opts),
     ]
   }
   return [
     { kind: 'hdr', text: '[structured unavailable → text]' },
-    ...lineThenWord(a, b, false),
+    ...lineThenWord(a, b, false, opts),
   ]
 }
 
-function prettyThenText(a: string, b: string): DiffOp[] {
+function prettyThenText(a: string, b: string, options: DiffOptions): DiffOp[] {
+  const opts = normalizeOptions(options)
   const pa = tryPretty(a)
   const pb = tryPretty(b)
   const ops: DiffOp[] = []
   const notes = [pa.note, pb.note].filter(Boolean)
   if (notes.length > 0) {
-    ops.push({ kind: 'hdr', text: `[pretty] ${[...new Set(notes)].join('; ')} → text` })
+    ops.push({
+      kind: 'hdr',
+      text: `[pretty] ${[...new Set(notes)].join('; ')} → coarse=${opts.coarse} fine=${opts.fine}`,
+    })
   } else {
     ops.push({ kind: 'hdr', text: '[pretty] not JSON/XML — raw text' })
   }
-  ops.push(...lineThenWord(pa.text, pb.text, false))
+  ops.push(...lineThenWord(pa.text, pb.text, false, opts))
   return ops
 }
 
 export function registerBuiltinPresets(): void {
   registerPreset({
     id: 'strict',
-    label: 'exact whole-line Myers only',
-    run: (a, b) => myersSes(splitLines(a), splitLines(b)),
+    label: 'exact whole-line only (no word refine)',
+    run: (a, b, _d, options) => {
+      const opts = normalizeOptions(options)
+      return [
+        { kind: 'hdr', text: `[strict · ${opts.coarse}]` },
+        ...runAlgo(opts.coarse, splitLines(a), splitLines(b)),
+      ]
+    },
   })
   registerPreset({
     id: 'text',
     label: 'lines + word refine on modified lines',
-    run: (a, b) => lineThenWord(a, b, false),
+    run: (a, b, _d, options) => lineThenWord(a, b, false, options),
   })
   registerPreset({
     id: 'ignore-ws',
     label: 'ignore leading spaces, then word refine',
-    run: (a, b) => lineThenWord(a, b, true),
+    run: (a, b, _d, options) => lineThenWord(a, b, true, options),
   })
   registerPreset({
     id: 'pretty',
     label: 'prettify XML/JSON then text diff',
-    run: (a, b) => prettyThenText(a, b),
+    run: (a, b, _d, options) => prettyThenText(a, b, options),
   })
   registerPreset({
     id: 'structured',
-    label: 'JSON/XML path flatten + Myers',
+    label: 'JSON/XML path flatten + refine',
     run: structuredOrText,
   })
   registerPreset({
     id: 'recommended',
     label: 'auto (rules)',
-    run: (a, b, d) => {
+    run: (a, b, d, options) => {
       const { id } = recommend(d)
-      if (id === 'recommended') return lineThenWord(a, b, false)
-      return runPreset(id, a, b, d)
+      if (id === 'recommended') return lineThenWord(a, b, false, options)
+      return runPreset(id, a, b, d, options)
     },
   })
 }

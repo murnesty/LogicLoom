@@ -1,5 +1,10 @@
 import type { Detection, Recommendation } from '../engine/types'
-import { listPresetIds } from '../engine'
+import {
+  listPresetIds,
+  listAlgorithms,
+  COARSE_ALGO_IDS,
+  FINE_ALGO_IDS,
+} from '../engine'
 
 const LABELS: Record<string, string> = {
   recommended: 'recommended (auto)',
@@ -10,11 +15,18 @@ const LABELS: Record<string, string> = {
   structured: 'structured',
 }
 
+const algoLabel = (id: string) =>
+  listAlgorithms().find((a) => a.id === id)?.label ?? id
+
 export function PresetBar({
   detection,
   recommendation,
   preset,
   onPreset,
+  coarse,
+  onCoarse,
+  fine,
+  onFine,
   layout,
   onLayout,
   wrap,
@@ -26,6 +38,10 @@ export function PresetBar({
   recommendation: Recommendation | null
   preset: string
   onPreset: (id: string) => void
+  coarse: string
+  onCoarse: (id: string) => void
+  fine: string
+  onFine: (id: string) => void
   layout: 'unified' | 'split'
   onLayout: (layout: 'unified' | 'split') => void
   wrap: boolean
@@ -46,11 +62,31 @@ export function PresetBar({
         </p>
       )}
       <label>
-        Preset
+        Preset (pipeline)
         <select value={preset} onChange={(e) => onPreset(e.target.value)}>
           {listPresetIds().map((id) => (
             <option key={id} value={id}>
               {LABELS[id] ?? id}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Coarse algo (whole doc / lines)
+        <select value={coarse} onChange={(e) => onCoarse(e.target.value)}>
+          {COARSE_ALGO_IDS.map((id) => (
+            <option key={id} value={id}>
+              {algoLabel(id)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Fine algo (modified line)
+        <select value={fine} onChange={(e) => onFine(e.target.value)}>
+          {FINE_ALGO_IDS.map((id) => (
+            <option key={id} value={id}>
+              {algoLabel(id)}
             </option>
           ))}
         </select>
