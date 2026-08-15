@@ -9,6 +9,7 @@ A monorepo for multiple hobby projects with ASP.NET Core backends and React Type
 | **History Viewer** | Interactive historical map with timeline (WIP; not linked on the hub yet) | React + TypeScript | ASP.NET Core |
 | **Receipt Calculator** | Receipt management and calculations | React + TypeScript | ASP.NET Core |
 | **Places near you** | Malaysia POIs from OpenStreetMap (Overpass) — food, malls, shops | React + TypeScript | — (browser-only) |
+| **Diff Lab** | Text / DOCX zip-entry diff playground with presets | React + TypeScript | — (browser-only) |
 
 ## Project Structure
 
@@ -21,7 +22,8 @@ LogicLoom/
 ├── frontend/
 │   ├── history-viewer/            # React app for History Viewer (WIP)
 │   ├── receipt-calculator/        # React app for Receipt Calculator
-│   └── restaurant-finder/         # Places near you (OSM / Overpass)
+│   ├── restaurant-finder/         # Places near you (OSM / Overpass)
+│   └── diff-lab/                  # Diff Lab (DOCX / text presets)
 ├── docs/                          # Documentation
 └── .github/workflows/             # CI/CD pipelines
 ```
@@ -68,6 +70,7 @@ npm run dev
 - URLs:
   - `https://<username>.github.io/LogicLoom/receipt-calculator/`
   - `https://<username>.github.io/LogicLoom/restaurant-finder/`
+  - `https://<username>.github.io/LogicLoom/diff-lab/`
 
 ## Environment Variables
 

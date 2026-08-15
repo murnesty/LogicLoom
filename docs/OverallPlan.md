@@ -51,7 +51,7 @@ LogicLoom/
 - **Deployment Options:**
   - **GitHub Pages (subfolder method):**
     - Build each app to a subfolder in the `gh-pages` branch.
-    - URLs (current workflow): `https://<username>.github.io/LogicLoom/receipt-calculator/`, `https://<username>.github.io/LogicLoom/restaurant-finder/`
+    - URLs (current workflow): `https://<username>.github.io/LogicLoom/receipt-calculator/`, `https://<username>.github.io/LogicLoom/restaurant-finder/`, `https://<username>.github.io/LogicLoom/diff-lab/`
   - **Vercel/Netlify:**
     - Deploy each app from its subfolder for its own custom domain or subdomain.
   - **Other:**

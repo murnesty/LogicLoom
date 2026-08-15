@@ -1,0 +1,182 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a2332;
+  --text: #e7ecf3;
+  --muted: #9aa8bc;
+  --accent: #3d8bfd;
+  --del: #5c1f24;
+  --ins: #1a3d2a;
+  --hdr: #2a3344;
+  --warn: #e6b84d;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--text);
+  background: radial-gradient(1200px 600px at 10% -10%, #1a2a44, var(--bg));
+  line-height: 1.45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.eyebrow {
+  color: var(--muted);
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.eyebrow a {
+  color: var(--accent);
+}
+
+h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.85rem;
+  font-weight: 650;
+}
+
+.lede {
+  color: var(--muted);
+  margin: 0 0 1.25rem;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.mode-toggle button,
+.preset-bar button {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid #2c3a4f;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+.mode-toggle button.active {
+  border-color: var(--accent);
+  background: #24344f;
+}
+
+.file-inputs,
+.paste-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 720px) {
+  .file-inputs,
+  .paste-inputs {
+    grid-template-columns: 1fr;
+  }
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+input[type='file'],
+select,
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid #2c3a4f;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.file-name {
+  font-size: 0.8rem;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.entry-select,
+.preset-bar {
+  background: var(--panel);
+  border: 1px solid #2c3a4f;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.preset-bar p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.status-warn {
+  color: var(--warn);
+  margin: 0.25rem 0;
+}
+
+.diff-out {
+  margin: 0;
+  padding: 0.75rem;
+  background: #0c1016;
+  border-radius: 10px;
+  border: 1px solid #2c3a4f;
+  overflow: auto;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+.op {
+  white-space: pre-wrap;
+  padding: 0.05rem 0.2rem;
+}
+
+.op-mark {
+  display: inline-block;
+  width: 1.1rem;
+  opacity: 0.7;
+}
+
+.op-del {
+  background: var(--del);
+}
+
+.op-ins {
+  background: var(--ins);
+}
+
+.op-hdr {
+  background: var(--hdr);
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 0.35rem;
+}

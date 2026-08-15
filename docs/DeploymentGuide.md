@@ -13,7 +13,8 @@ This guide explains how to deploy the LogicLoom monorepo with:
 │                           GitHub Pages                               │
 │  https://murnesty.github.io/LogicLoom/                              │
 │  ├── /receipt-calculator/ → React App (Receipt Calculator)         │
-│  └── /restaurant-finder/  → Places near you (OSM / Overpass)        │
+│  ├── /restaurant-finder/  → Places near you (OSM / Overpass)        │
+│  └── /diff-lab/           → Diff Lab (text / DOCX entry presets)    │
 └─────────────────────────────────────────────────────────────────────┘
                               │
                               │ API Calls (CORS enabled)

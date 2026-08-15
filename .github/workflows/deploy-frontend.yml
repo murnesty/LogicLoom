@@ -53,13 +53,23 @@ jobs:
         working-directory: frontend/restaurant-finder
         run: npm run build
 
+      - name: Install dependencies (diff-lab)
+        working-directory: frontend/diff-lab
+        run: npm install
+
+      - name: Build (diff-lab)
+        working-directory: frontend/diff-lab
+        run: npm run build
+
       # Combine builds into single pages folder
       - name: Prepare Pages
         run: |
           mkdir -p _site/receipt-calculator
           mkdir -p _site/restaurant-finder
+          mkdir -p _site/diff-lab
           cp -r frontend/receipt-calculator/dist/* _site/receipt-calculator/
           cp -r frontend/restaurant-finder/dist/* _site/restaurant-finder/
+          cp -r frontend/diff-lab/dist/* _site/diff-lab/
           cp frontend/index.html _site/index.html
 
       - name: Upload artifact
