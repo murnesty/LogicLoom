@@ -5,13 +5,32 @@ import { leadingWsEqual, splitLines, tokenizeWords } from './tokens'
 import { flattenJson, flattenXml, tryParseJson, tryParseXml } from './flatten'
 import { recommend } from './detect'
 
+/** Path key for flattened lines: everything before first ` = `. */
+export function pathKey(line: string): string {
+  const i = line.indexOf(' = ')
+  return i >= 0 ? line.slice(0, i) : line
+}
+
+function wordRefineOps(oldL: string, newL: string): DiffOp[] {
+  return myersSes(tokenizeWords(oldL), tokenizeWords(newL)).map((w) => ({
+    kind: w.kind,
+    text: w.text.replace(/\n/g, '⏎'),
+  }))
+}
+
 function lineThenWord(a: string, b: string, ignoreLeadingWs: boolean): DiffOp[] {
   const la = splitLines(a)
   const lb = splitLines(b)
   const eq = ignoreLeadingWs ? leadingWsEqual : (x: string, y: string) => x === y
-  const ses = myersSes(la, lb, eq)
-  const ops: DiffOp[] = []
+  return refineAdjacentLineEdits(myersSes(la, lb, eq), eq)
+}
 
+/** Collapse adjacent del/ins (any lines) into modify + word Myers. */
+function refineAdjacentLineEdits(
+  ses: DiffOp[],
+  eq: (x: string, y: string) => boolean
+): DiffOp[] {
+  const ops: DiffOp[] = []
   for (let i = 0; i < ses.length; i++) {
     const cur = ses[i]
     const next = i + 1 < ses.length ? ses[i + 1] : null
@@ -26,9 +45,7 @@ function lineThenWord(a: string, b: string, ignoreLeadingWs: boolean): DiffOp[] 
     }
     if (oldL !== null && newL !== null && oldL.length > 0 && newL.length > 0 && !eq(oldL, newL)) {
       ops.push({ kind: 'hdr', text: '~ modified line' })
-      for (const w of myersSes(tokenizeWords(oldL), tokenizeWords(newL))) {
-        ops.push({ kind: w.kind, text: w.text.replace(/\n/g, '⏎') })
-      }
+      ops.push(...wordRefineOps(oldL, newL))
       i++
       continue
     }
@@ -37,16 +54,69 @@ function lineThenWord(a: string, b: string, ignoreLeadingWs: boolean): DiffOp[] 
   return ops
 }
 
+/**
+ * For structured path lines: pair del+ins that share the same path key
+ * (even if not adjacent), emit ~ modified + word Myers.
+ */
+export function refineSamePathEdits(ses: DiffOp[]): DiffOp[] {
+  const used = new Set<number>()
+  const byKey = new Map<string, { dels: number[]; ins: number[] }>()
+
+  for (let i = 0; i < ses.length; i++) {
+    const op = ses[i]
+    if (op.kind !== 'del' && op.kind !== 'ins') continue
+    const k = pathKey(op.text)
+    let bucket = byKey.get(k)
+    if (!bucket) {
+      bucket = { dels: [], ins: [] }
+      byKey.set(k, bucket)
+    }
+    if (op.kind === 'del') bucket.dels.push(i)
+    else bucket.ins.push(i)
+  }
+
+  const pairOf = new Map<number, number>()
+  for (const bucket of byKey.values()) {
+    const n = Math.min(bucket.dels.length, bucket.ins.length)
+    for (let p = 0; p < n; p++) {
+      const di = bucket.dels[p]
+      const ii = bucket.ins[p]
+      if (ses[di].text === ses[ii].text) continue
+      pairOf.set(di, ii)
+      pairOf.set(ii, di)
+    }
+  }
+
+  const ops: DiffOp[] = []
+  for (let i = 0; i < ses.length; i++) {
+    if (used.has(i)) continue
+    const op = ses[i]
+    const partner = pairOf.get(i)
+    if (partner !== undefined && (op.kind === 'del' || op.kind === 'ins')) {
+      used.add(i)
+      used.add(partner)
+      const delOp = op.kind === 'del' ? op : ses[partner]
+      const insOp = op.kind === 'ins' ? op : ses[partner]
+      const key = pathKey(delOp.text)
+      ops.push({ kind: 'hdr', text: `~ modified ${key}` })
+      ops.push(...wordRefineOps(delOp.text, insOp.text))
+      continue
+    }
+    ops.push(op)
+  }
+  return ops
+}
+
 function structuredOrText(a: string, b: string, d: Detection): DiffOp[] {
   try {
     if (d.kind === 'json' || (tryParseJson(a) && tryParseJson(b))) {
       const ops: DiffOp[] = [{ kind: 'hdr', text: '[structured JSON paths]' }]
-      ops.push(...myersSes(flattenJson(a), flattenJson(b)))
+      ops.push(...refineSamePathEdits(myersSes(flattenJson(a), flattenJson(b))))
       return ops
     }
     if (d.kind === 'xml' || (tryParseXml(a) && tryParseXml(b))) {
       const ops: DiffOp[] = [{ kind: 'hdr', text: '[structured XML paths]' }]
-      ops.push(...myersSes(flattenXml(a), flattenXml(b)))
+      ops.push(...refineSamePathEdits(myersSes(flattenXml(a), flattenXml(b))))
       return ops
     }
   } catch (e) {

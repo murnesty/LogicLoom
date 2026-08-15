@@ -36,7 +36,8 @@ describe('detect/recommend', () => {
       { kind: 'xml', confidence: 'high', detail: '' }
     )
     expect(ops[0]).toEqual({ kind: 'hdr', text: '[structured XML paths]' })
-    expect(ops.some((o) => o.kind === 'del' && o.text.includes('= 1'))).toBe(true)
-    expect(ops.some((o) => o.kind === 'ins' && o.text.includes('= 2'))).toBe(true)
+    expect(ops.some((o) => o.kind === 'hdr' && o.text.includes('~ modified'))).toBe(true)
+    expect(ops.some((o) => o.kind === 'del' && o.text.includes('1'))).toBe(true)
+    expect(ops.some((o) => o.kind === 'ins' && o.text.includes('2'))).toBe(true)
   })
 })

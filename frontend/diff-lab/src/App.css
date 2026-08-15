@@ -180,3 +180,34 @@ textarea {
   font-weight: 600;
   margin-top: 0.35rem;
 }
+
+.op-mod {
+  background: #243044;
+  border-left: 3px solid #e6b84d;
+  margin: 0.25rem 0;
+  padding: 0.25rem 0.35rem;
+}
+
+.op-mod-hdr {
+  color: var(--warn);
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.op-mod-inline {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tok-keep {
+  color: var(--text);
+}
+
+.tok-del {
+  background: var(--del);
+  text-decoration: line-through;
+}
+
+.tok-ins {
+  background: var(--ins);
+}
