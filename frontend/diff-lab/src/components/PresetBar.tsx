@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Detection } from '../engine/types'
 import {
   listPresetIds,
@@ -18,6 +19,47 @@ const LABELS: Record<string, string> = {
 
 const algoLabel = (id: string) =>
   listAlgorithms().find((a) => a.id === id)?.label ?? id
+
+function Field({
+  label,
+  children,
+  className = '',
+}: {
+  label: string
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <label className={`ctrl-field ${className}`}>
+      <span className="ctrl-label">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function Toggle({
+  label,
+  checked,
+  onChange,
+  title,
+}: {
+  label: string
+  checked: boolean
+  onChange: (v: boolean) => void
+  title?: string
+}) {
+  return (
+    <label className={`ctrl-toggle${checked ? ' on' : ''}`} title={title}>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span className="ctrl-toggle-ui" aria-hidden />
+      <span className="ctrl-toggle-text">{label}</span>
+    </label>
+  )
+}
 
 export function PresetBar({
   detection,
@@ -62,95 +104,95 @@ export function PresetBar({
 }) {
   const showStructure = preset === 'structured'
   return (
-    <div className="preset-bar">
-      {detection && (
-        <p>
-          Detected: <strong>{detection.kind}</strong> ({detection.confidence}) —{' '}
-          {detection.detail}
-        </p>
-      )}
-      <label>
-        Preset (pipeline)
-        <select value={preset} onChange={(e) => onPreset(e.target.value)}>
-          {listPresetIds().map((id) => (
-            <option key={id} value={id}>
-              {LABELS[id] ?? id}
-            </option>
-          ))}
-        </select>
-      </label>
-      {showStructure && (
-        <label>
-          Structure strategy (JSON/XML)
-          <select value={structure} onChange={(e) => onStructure(e.target.value)}>
-            {STRUCTURE_STRATEGY_IDS.map((id) => (
+    <section className="ctrl-panel">
+      <div className="ctrl-panel-top">
+        <div className="ctrl-meta">
+          {detection ? (
+            <p className="ctrl-detect">
+              Detected <strong>{detection.kind}</strong>
+              <span className="ctrl-pill">{detection.confidence}</span>
+              <span className="ctrl-detect-detail">{detection.detail}</span>
+            </p>
+          ) : (
+            <p className="ctrl-detect muted">Upload or paste, then Compare</p>
+          )}
+        </div>
+        <button
+          type="button"
+          className="ctrl-run"
+          onClick={onRun}
+          disabled={running}
+        >
+          {running ? 'Comparing…' : 'Compare'}
+        </button>
+      </div>
+
+      <div className="ctrl-row ctrl-row-fields">
+        <Field label="Preset">
+          <select value={preset} onChange={(e) => onPreset(e.target.value)}>
+            {listPresetIds().map((id) => (
               <option key={id} value={id}>
-                {STRUCTURE_LABELS[id]}
+                {LABELS[id] ?? id}
               </option>
             ))}
           </select>
-        </label>
-      )}
-      <label>
-        Coarse algo (line SES)
-        <select value={coarse} onChange={(e) => onCoarse(e.target.value)}>
-          {COARSE_ALGO_IDS.map((id) => (
-            <option key={id} value={id}>
-              {algoLabel(id)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Fine algo (modified line)
-        <select value={fine} onChange={(e) => onFine(e.target.value)}>
-          {FINE_ALGO_IDS.map((id) => (
-            <option key={id} value={id}>
-              {algoLabel(id)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        View
-        <select
-          value={layout}
-          onChange={(e) => onLayout(e.target.value as 'unified' | 'split')}
-        >
-          <option value="unified">Unified (single)</option>
-          <option value="split">Side by side</option>
-        </select>
-      </label>
-      <label className="checkbox-label" title="XML/HTML attribute order is insignificant">
-        <span>Sort attrs</span>
-        <input
-          type="checkbox"
+        </Field>
+        {showStructure && (
+          <Field label="Structure" className="ctrl-field-wide">
+            <select value={structure} onChange={(e) => onStructure(e.target.value)}>
+              {STRUCTURE_STRATEGY_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {STRUCTURE_LABELS[id]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        <Field label="Coarse algo">
+          <select value={coarse} onChange={(e) => onCoarse(e.target.value)}>
+            {COARSE_ALGO_IDS.map((id) => (
+              <option key={id} value={id}>
+                {algoLabel(id)}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Fine algo">
+          <select value={fine} onChange={(e) => onFine(e.target.value)}>
+            {FINE_ALGO_IDS.map((id) => (
+              <option key={id} value={id}>
+                {algoLabel(id)}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="View">
+          <select
+            value={layout}
+            onChange={(e) => onLayout(e.target.value as 'unified' | 'split')}
+          >
+            <option value="unified">Unified</option>
+            <option value="split">Side by side</option>
+          </select>
+        </Field>
+      </div>
+
+      <div className="ctrl-row ctrl-row-toggles">
+        <span className="ctrl-section-label">Options</span>
+        <Toggle
+          label="Sort attrs"
           checked={sortAttrs}
-          onChange={(e) => onSortAttrs(e.target.checked)}
+          onChange={onSortAttrs}
+          title="XML/HTML attribute order is insignificant"
         />
-      </label>
-      <label
-        className="checkbox-label"
-        title="Word OOXML only: drop rsid*, w:id, w14:paraId/textId (no-op for other XML)"
-      >
-        <span>Ignore OOXML ids</span>
-        <input
-          type="checkbox"
+        <Toggle
+          label="Ignore OOXML ids"
           checked={ignoreOoxmlIds}
-          onChange={(e) => onIgnoreOoxmlIds(e.target.checked)}
+          onChange={onIgnoreOoxmlIds}
+          title="Word OOXML only: drop rsid*, w:id, paraId/textId"
         />
-      </label>
-      <label className="checkbox-label">
-        <span>Word wrap</span>
-        <input
-          type="checkbox"
-          checked={wrap}
-          onChange={(e) => onWrap(e.target.checked)}
-        />
-      </label>
-      <button type="button" onClick={onRun} disabled={running}>
-        {running ? 'Comparing…' : 'Compare'}
-      </button>
-    </div>
+        <Toggle label="Word wrap" checked={wrap} onChange={onWrap} />
+      </div>
+    </section>
   )
 }

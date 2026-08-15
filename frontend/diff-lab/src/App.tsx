@@ -11,6 +11,7 @@ import {
   type EntryAvailability,
 } from './engine'
 import { DiffResult } from './components/DiffResult'
+import { DiffWorkspace } from './components/DiffWorkspace'
 import { EntrySelect } from './components/EntrySelect'
 import { FileInputs } from './components/FileInputs'
 import { PasteInputs } from './components/PasteInputs'
@@ -246,7 +247,11 @@ export default function App() {
       />
 
       {error && <p className="status-warn">{error}</p>}
-      {ops && <DiffResult ops={ops} layout={layout} wrap={wrap} />}
+      {ops && (
+        <DiffWorkspace>
+          <DiffResult ops={ops} layout={layout} wrap={wrap} />
+        </DiffWorkspace>
+      )}
     </div>
   )
 }
