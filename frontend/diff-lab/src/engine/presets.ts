@@ -105,8 +105,9 @@ function structuredOrText(
 
 function prettyThenText(a: string, b: string, options: DiffOptions): DiffOp[] {
   const opts = normalizeOptions(options)
-  const pa = tryPretty(a)
-  const pb = tryPretty(b)
+  const prettyOpts = { sortAttrs: opts.sortAttrs }
+  const pa = tryPretty(a, prettyOpts)
+  const pb = tryPretty(b, prettyOpts)
   const ops: DiffOp[] = []
   const notes = [pa.note, pb.note].filter(Boolean)
   if (notes.length > 0) {

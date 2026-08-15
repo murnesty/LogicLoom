@@ -51,6 +51,7 @@ export function normalizeOptions(opts?: Partial<DiffOptions>): DiffOptions {
     coarse: opts?.coarse ?? DEFAULT_DIFF_OPTIONS.coarse,
     fine: opts?.fine ?? DEFAULT_DIFF_OPTIONS.fine,
     structure: opts?.structure ?? DEFAULT_DIFF_OPTIONS.structure,
+    sortAttrs: opts?.sortAttrs ?? DEFAULT_DIFF_OPTIONS.sortAttrs,
   }
 }
 

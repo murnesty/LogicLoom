@@ -28,11 +28,36 @@ describe('prettyXml', () => {
     )
     const lines = out.split('\n')
     expect(lines[0]).toBe('<w:document')
-    expect(lines).toContain('  xmlns:w="urn:w"')
-    expect(lines).toContain('  xmlns:r="urn:r"')
-    expect(lines.some((l) => l.trim() === 'mc:Ignorable="w14">')).toBe(true)
+    // Default: alphabetical — mc, xmlns:r, xmlns:w
+    expect(lines[1]).toBe('  mc:Ignorable="w14"')
+    expect(lines[2]).toBe('  xmlns:r="urn:r"')
+    expect(lines[3].trim()).toBe('xmlns:w="urn:w">')
     expect(out).toContain('  <w:body/>')
     expect(out).toContain('</w:document>')
+  })
+
+  it('sorts attributes so order-only swaps compare equal', () => {
+    const a = prettyXml(
+      '<w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+    )
+    const b = prettyXml(
+      '<w:top w:val="single" w:color="auto" w:sz="4" w:space="0"/>'
+    )
+    expect(a).toBe(b)
+    expect(a).toContain('w:color="auto"')
+    expect(a.indexOf('w:color')).toBeLessThan(a.indexOf('w:space'))
+    expect(a.indexOf('w:space')).toBeLessThan(a.indexOf('w:sz'))
+  })
+
+  it('can preserve document attribute order when sortAttrs=false', () => {
+    const out = prettyXml(
+      '<w:top w:val="single" w:sz="4" w:color="auto"/>',
+      { sortAttrs: false }
+    )
+    const lines = out.split('\n').map((l) => l.trim())
+    expect(lines[1]).toBe('w:val="single"')
+    expect(lines[2]).toBe('w:sz="4"')
+    expect(lines[3]).toBe('w:color="auto"')
   })
 
   it('breaks fat self-closing attribute tags', () => {
@@ -41,7 +66,9 @@ describe('prettyXml', () => {
       1
     )
     expect(lines[0]).toBe('  <w:rFonts')
-    expect(lines).toContain('    w:ascii="Calibri"')
+    // sorted: w:ascii, w:cs, w:hAnsi
+    expect(lines[1]).toBe('    w:ascii="Calibri"')
+    expect(lines[2]).toBe('    w:cs="Calibri"')
     expect(lines[lines.length - 1]).toBe('  />')
   })
 })
@@ -66,9 +93,23 @@ describe('pretty preset', () => {
     expect(ops.some((o) => o.text.includes('<item>'))).toBe(true)
   })
 
+  it('ignores attribute order swaps by default', () => {
+    const a = '<w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+    const b = '<w:top w:val="single" w:color="auto" w:sz="4" w:space="0"/>'
+    const ops = runPreset(
+      'pretty',
+      a,
+      b,
+      { kind: 'xml', confidence: 'high', detail: '' },
+      { sortAttrs: true }
+    )
+    const edits = ops.filter((o) => o.kind === 'del' || o.kind === 'ins')
+    expect(edits).toHaveLength(0)
+  })
+
   it('tryPretty reports line expansion', () => {
     const r = tryPretty('<a xmlns:x="1" xmlns:y="2"><b/></a>')
-    expect(r.note).toMatch(/prettified XML \(\d+ → \d+ lines\)/)
+    expect(r.note).toMatch(/prettified XML \(\d+ → \d+ lines; attrs sorted\)/)
     expect(r.text.split('\n').length).toBeGreaterThan(3)
   })
 })

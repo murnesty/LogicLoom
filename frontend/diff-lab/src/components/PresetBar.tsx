@@ -37,6 +37,8 @@ export function PresetBar({
   onLayout,
   wrap,
   onWrap,
+  sortAttrs,
+  onSortAttrs,
   onRun,
   running,
 }: {
@@ -54,6 +56,8 @@ export function PresetBar({
   onLayout: (layout: 'unified' | 'split') => void
   wrap: boolean
   onWrap: (wrap: boolean) => void
+  sortAttrs: boolean
+  onSortAttrs: (v: boolean) => void
   onRun: () => void
   running: boolean
 }) {
@@ -122,6 +126,14 @@ export function PresetBar({
           <option value="unified">Unified (single)</option>
           <option value="split">Side by side</option>
         </select>
+      </label>
+      <label className="checkbox-label" title="XML/HTML attribute order is insignificant">
+        <span>Sort attrs</span>
+        <input
+          type="checkbox"
+          checked={sortAttrs}
+          onChange={(e) => onSortAttrs(e.target.checked)}
+        />
       </label>
       <label className="checkbox-label">
         <span>Word wrap</span>

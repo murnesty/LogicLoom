@@ -21,17 +21,20 @@ export type Algorithm = {
  * Coarse = line/token SES after flatten (or text lines).
  * Fine = modified-line word refine.
  * Structure = how JSON/XML is aligned before/instead of flat SES (structured preset).
+ * sortAttrs = normalize XML/HTML attribute order when pretty-printing (order is insignificant).
  */
 export type DiffOptions = {
   coarse: string
   fine: string
   structure: string
+  sortAttrs: boolean
 }
 
 export const DEFAULT_DIFF_OPTIONS: DiffOptions = {
   coarse: 'myers',
   fine: 'myers',
   structure: 'path-key',
+  sortAttrs: true,
 }
 
 export const COARSE_ALGO_IDS = [

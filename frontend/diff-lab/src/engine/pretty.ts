@@ -3,6 +3,11 @@ export function prettyJson(text: string): string {
   return JSON.stringify(JSON.parse(text), null, 2)
 }
 
+export type PrettyXmlOptions = {
+  /** Sort attributes by name (XML/HTML order is insignificant). Default true. */
+  sortAttrs?: boolean
+}
+
 /** Parse `name="value"` / `name='value'` attrs from the inside of a tag (after element name). */
 export function parseXmlAttrList(attrBlob: string): string[] {
   const attrs: string[] = []
@@ -14,13 +19,27 @@ export function parseXmlAttrList(attrBlob: string): string[] {
   return attrs
 }
 
+function attrName(attr: string): string {
+  const i = attr.indexOf('=')
+  return i >= 0 ? attr.slice(0, i) : attr
+}
+
+function maybeSortAttrs(attrs: string[], sort: boolean): string[] {
+  if (!sort || attrs.length < 2) return attrs
+  return [...attrs].sort((a, b) => attrName(a).localeCompare(attrName(b)))
+}
+
 /**
  * Format one tag onto its own line(s).
  * - Every element open / close / self-close is its own line (plus indent).
  * - Any attributes go on following indented lines (OOXML-friendly).
  * - Short <tag>text</tag> stays one line only when the open tag has no attrs.
  */
-export function formatXmlTagLine(line: string, depth: number): string[] {
+export function formatXmlTagLine(
+  line: string,
+  depth: number,
+  sortAttrs = true
+): string[] {
   const indent = '  '.repeat(depth)
   const attrIndent = '  '.repeat(depth + 1)
 
@@ -39,7 +58,7 @@ export function formatXmlTagLine(line: string, depth: number): string[] {
     /^<([A-Za-z_:][\w:.-]*)(\s+[^>]+)>([\s\S]*)<\/\1\s*>$/.exec(line)
   if (pairWithAttrs) {
     const name = pairWithAttrs[1]
-    const attrs = parseXmlAttrList(pairWithAttrs[2])
+    const attrs = maybeSortAttrs(parseXmlAttrList(pairWithAttrs[2]), sortAttrs)
     const inner = pairWithAttrs[3]
     const openLines = expandOpenTag(name, attrs, depth, false)
     if (!inner) {
@@ -54,7 +73,7 @@ export function formatXmlTagLine(line: string, depth: number): string[] {
   if (!open) return [`${indent}${line}`]
 
   const name = open[1]
-  const attrs = parseXmlAttrList(open[2] ?? '')
+  const attrs = maybeSortAttrs(parseXmlAttrList(open[2] ?? ''), sortAttrs)
   return expandOpenTag(name, attrs, depth, selfClose || open[3] === '/')
 }
 
@@ -89,9 +108,10 @@ function expandOpenTag(
 
 /**
  * Pretty-print XML: one element boundary per line, attrs broken out,
- * children indented.
+ * children indented. Attributes sorted by name when sortAttrs is true.
  */
-export function prettyXml(text: string): string {
+export function prettyXml(text: string, options: PrettyXmlOptions = {}): string {
+  const sortAttrs = options.sortAttrs !== false
   const src = text.replace(/^\uFEFF/, '').trim()
   if (!src.startsWith('<')) throw new Error('Not XML')
 
@@ -122,7 +142,7 @@ export function prettyXml(text: string): string {
 
     const formatted = isDeclOrComment
       ? [`${'  '.repeat(depth)}${line}`]
-      : formatXmlTagLine(line, depth)
+      : formatXmlTagLine(line, depth, sortAttrs)
     out.push(...formatted)
 
     if (isOpening) depth++
@@ -134,7 +154,10 @@ export function prettyXml(text: string): string {
 export type PrettyResult = { text: string; note: string | null }
 
 /** Try JSON then XML pretty; otherwise return original. */
-export function tryPretty(text: string): PrettyResult {
+export function tryPretty(
+  text: string,
+  options: PrettyXmlOptions = {}
+): PrettyResult {
   const t = text.trimStart()
   if (t.startsWith('{') || t.startsWith('[')) {
     try {
@@ -150,11 +173,13 @@ export function tryPretty(text: string): PrettyResult {
   if (t.startsWith('<')) {
     try {
       const before = text.split(/\r?\n/).length
-      const out = prettyXml(text)
+      const sortAttrs = options.sortAttrs !== false
+      const out = prettyXml(text, { sortAttrs })
       const after = out.split('\n').length
+      const sortNote = sortAttrs ? '; attrs sorted' : ''
       return {
         text: out,
-        note: `prettified XML (${before} → ${after} lines)`,
+        note: `prettified XML (${before} → ${after} lines${sortNote})`,
       }
     } catch {
       return { text, note: 'XML pretty failed — using raw' }

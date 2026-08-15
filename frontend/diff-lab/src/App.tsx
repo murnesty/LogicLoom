@@ -39,6 +39,7 @@ export default function App() {
   const [coarse, setCoarse] = useState(DEFAULT_DIFF_OPTIONS.coarse)
   const [fine, setFine] = useState(DEFAULT_DIFF_OPTIONS.fine)
   const [structure, setStructure] = useState(DEFAULT_DIFF_OPTIONS.structure)
+  const [sortAttrs, setSortAttrs] = useState(DEFAULT_DIFF_OPTIONS.sortAttrs)
   const [detection, setDetection] = useState<Detection | null>(null)
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null)
   const [ops, setOps] = useState<DiffOp[] | null>(null)
@@ -160,7 +161,12 @@ export default function App() {
       const rec = recommend(d)
       setDetection(d)
       setRecommendation(rec)
-      const result = runPreset(preset, textA, textB, d, { coarse, fine, structure })
+      const result = runPreset(preset, textA, textB, d, {
+        coarse,
+        fine,
+        structure,
+        sortAttrs,
+      })
       if (availNote) {
         setOps([{ kind: 'hdr', text: `[${availNote}]` }, ...result])
       } else {
@@ -233,6 +239,8 @@ export default function App() {
         onLayout={setLayout}
         wrap={wrap}
         onWrap={setWrap}
+        sortAttrs={sortAttrs}
+        onSortAttrs={setSortAttrs}
         onRun={() => void onCompare()}
         running={running}
       />
