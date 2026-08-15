@@ -108,6 +108,17 @@ function prettyThenText(a: string, b: string, options: DiffOptions): DiffOp[] {
     sortAttrs: opts.sortAttrs,
     ignoreOoxmlIds: opts.ignoreOoxmlIds,
   }
+
+  // Same bytes → nothing to do (avoids pretty+SES on huge identical DOCX uploads)
+  if (a === b) {
+    return [
+      {
+        kind: 'hdr',
+        text: `[pretty] inputs identical (${a.length.toLocaleString()} chars) — no diff`,
+      },
+    ]
+  }
+
   const pa = tryPretty(a, prettyOpts)
   const pb = tryPretty(b, prettyOpts)
   const ops: DiffOp[] = []
@@ -120,8 +131,26 @@ function prettyThenText(a: string, b: string, options: DiffOptions): DiffOp[] {
   } else {
     ops.push({ kind: 'hdr', text: '[pretty] not JSON/XML — raw text' })
   }
-  // One prettified line = one diff row. Word-refine was smashing many XML lines
-  // into a single “modified” block in the UI.
+
+  if (pa.text === pb.text) {
+    const lines = splitLines(pa.text).length
+    ops.push({
+      kind: 'hdr',
+      text: `[identical after pretty] ${lines.toLocaleString()} lines — no edits`,
+    })
+    return ops
+  }
+
+  const la = splitLines(pa.text)
+  const lb = splitLines(pb.text)
+  if (la.length > 80_000 || lb.length > 80_000) {
+    ops.push({
+      kind: 'hdr',
+      text: `[pretty] too many lines (${la.length.toLocaleString()} vs ${lb.length.toLocaleString()}) — abort to avoid browser OOM. Try structured preset, or a smaller zip entry.`,
+    })
+    return ops
+  }
+
   ops.push(...lineThenWord(pa.text, pb.text, false, opts, false))
   return ops
 }

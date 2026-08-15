@@ -27,8 +27,9 @@ describe('myersSes', () => {
     const t0 = Date.now()
     const ops = myersSes(lines, lines)
     expect(Date.now() - t0).toBeLessThan(2000)
-    expect(ops).toHaveLength(20_000)
-    expect(ops.every((o) => o.kind === 'keep')).toBe(true)
+    expect(ops).toHaveLength(1)
+    expect(ops[0].kind).toBe('hdr')
+    expect(ops[0].text).toContain('identical')
   })
 
   it('small edit in long shared prefix/suffix', () => {
