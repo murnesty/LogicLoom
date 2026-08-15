@@ -479,20 +479,246 @@ textarea {
 }
 
 .minimap-stub {
-  width: 10px;
+  display: none;
+}
+
+/* Find panel */
+.find-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.55rem 0.6rem !important;
+  overflow: hidden;
+}
+
+.find-hint {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.find-hint code {
+  font-size: 0.7rem;
+  color: #9ec1ff;
+}
+
+.find-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.find-chip {
+  font-size: 0.7rem;
+  font-family: ui-monospace, Consolas, monospace;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #2c3a4f;
+  background: #0c1016;
+  color: #b8c7dc;
+  cursor: pointer;
+}
+
+.find-chip:hover {
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.find-form {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.find-form input {
   flex: 1;
-  min-height: 120px;
-  border-radius: 4px;
-  background: repeating-linear-gradient(
-    180deg,
-    #2a3344 0 3px,
-    #1a2332 3px 8px,
-    #5c1f24 8px 10px,
-    #1a2332 10px 18px,
-    #1a3d2a 18px 20px,
-    #1a2332 20px 28px
-  );
-  opacity: 0.85;
+  min-width: 0;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.find-go {
+  border: 1px solid #3d5a80;
+  background: #24344f;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.find-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.find-count {
+  flex: 1;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.find-nav button {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #2c3a4f;
+  background: #1a2332;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.find-nav button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.find-hits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  flex: 1;
+  min-height: 80px;
+  border: 1px solid #1e2a3a;
+  border-radius: 8px;
+}
+
+.find-hit {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-bottom: 1px solid #1a2332;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.find-hit:hover,
+.find-hit.active {
+  background: #1a2c44;
+}
+
+.find-hit-i {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.find-hit-t {
+  font-family: ui-monospace, Consolas, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.find-more {
+  font-size: 0.72rem;
+  margin: 0 !important;
+}
+
+/* Minimap */
+.diff-minimap {
+  position: relative;
+  flex: 1;
+  margin: 0.35rem 0.4rem 0.5rem;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #0a0e14;
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
+}
+
+.minimap-bucket {
+  flex: 1 1 0;
+  min-height: 1px;
+}
+
+.minimap-keep {
+  background: #1a2332;
+}
+
+.minimap-del {
+  background: #7a3038;
+}
+
+.minimap-ins {
+  background: #2a6b45;
+}
+
+.minimap-mix {
+  background: linear-gradient(90deg, #7a3038 50%, #2a6b45 50%);
+}
+
+.minimap-hdr {
+  background: #3d4a60;
+}
+
+.minimap-thumb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border: 1px solid rgba(157, 193, 255, 0.85);
+  background: rgba(61, 139, 253, 0.18);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.diff-row-hit {
+  outline: 1px solid #e6b84d;
+  outline-offset: -1px;
+  background: rgba(230, 184, 77, 0.12);
+}
+
+/* Busy overlay */
+.busy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(8, 12, 18, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.busy-card {
+  background: #1a2332;
+  border: 1px solid #2c3a4f;
+  border-radius: 14px;
+  padding: 1.35rem 1.75rem;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.busy-card p {
+  margin: 0.65rem 0 0;
+}
+
+.busy-sub {
+  font-size: 0.8rem !important;
+  margin-top: 0.25rem !important;
+}
+
+.busy-spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0 auto;
+  border: 3px solid #2c3a4f;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: busy-spin 0.7s linear infinite;
+}
+
+@keyframes busy-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .diff-rail-resizer {

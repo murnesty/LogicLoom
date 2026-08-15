@@ -10,7 +10,6 @@ import {
   type DiffOp,
   type EntryAvailability,
 } from './engine'
-import { DiffResult } from './components/DiffResult'
 import { DiffWorkspace } from './components/DiffWorkspace'
 import { EntrySelect } from './components/EntrySelect'
 import { FileInputs } from './components/FileInputs'
@@ -156,7 +155,8 @@ export default function App() {
     setRunning(true)
     setOps(null)
     try {
-      await new Promise((r) => requestAnimationFrame(() => r(undefined)))
+      // Let the loading backdrop paint before heavy work
+      await new Promise((r) => setTimeout(r, 40))
       const { textA, textB, nameA, nameB, availNote } = await resolveTexts()
       const d = detect(nameA, nameB, textA, textB)
       setDetection(d)
@@ -181,6 +181,15 @@ export default function App() {
 
   return (
     <div className="app">
+      {running && (
+        <div className="busy-overlay" role="status" aria-live="polite" aria-busy="true">
+          <div className="busy-card">
+            <div className="busy-spinner" aria-hidden />
+            <p>Comparing…</p>
+            <p className="muted busy-sub">Large OOXML can take a few seconds</p>
+          </div>
+        </div>
+      )}
       <header>
         <p className="eyebrow">
           <a href="../">LogicLoom</a> / Diff Lab
@@ -248,9 +257,7 @@ export default function App() {
 
       {error && <p className="status-warn">{error}</p>}
       {ops && (
-        <DiffWorkspace>
-          <DiffResult ops={ops} layout={layout} wrap={wrap} />
-        </DiffWorkspace>
+        <DiffWorkspace ops={ops} layout={layout} wrap={wrap} />
       )}
     </div>
   )

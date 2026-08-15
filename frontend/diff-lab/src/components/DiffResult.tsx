@@ -1,18 +1,28 @@
+import {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  type ReactNode,
+} from 'react'
 import type { DiffOp } from '../engine/types'
 
 export type DiffLayout = 'unified' | 'split'
+
+export type DiffResultHandle = {
+  scrollEl: HTMLDivElement | null
+  scrollToRow: (rowIndex: number) => void
+  getRowCount: () => number
+}
 
 function isModifyHdr(op: DiffOp): boolean {
   return op.kind === 'hdr' && op.text.startsWith('~ modified')
 }
 
-/** Word-refine tokens are whitespace-only or have no internal whitespace. */
 function isWordRefineToken(op: DiffOp): boolean {
   if (op.kind === 'hdr') return false
   return /^\s+$/.test(op.text) || !/\s/.test(op.text)
 }
 
-/** Closes a word-refine token run so later full lines are not swallowed. */
 function isModifyEnd(op: DiffOp): boolean {
   return op.kind === 'hdr' && op.text === '~.'
 }
@@ -21,11 +31,6 @@ type Row =
   | { type: 'single'; op: DiffOp }
   | { type: 'modify'; header: DiffOp; inline: DiffOp[] }
 
-/**
- * Group word-refine tokens under their `~ modified` header.
- * Stop at `~.`, any hdr, or the first full line (has mixed whitespace) —
- * so later XML lines can never be mashed into one inline block.
- */
 export function groupOps(ops: DiffOp[]): Row[] {
   const rows: Row[] = []
   let i = 0
@@ -50,6 +55,21 @@ export function groupOps(ops: DiffOp[]): Row[] {
     i++
   }
   return rows
+}
+
+/** Text used for outline search / minimap. */
+export function rowSearchText(row: Row): string {
+  if (row.type === 'single') return row.op.text
+  return (
+    row.header.text +
+    ' ' +
+    row.inline.map((t) => t.text).join('')
+  )
+}
+
+export function rowKind(row: Row): DiffOp['kind'] | 'mod' {
+  if (row.type === 'modify') return 'mod'
+  return row.op.kind
 }
 
 function mark(kind: DiffOp['kind']): string {
@@ -77,22 +97,47 @@ function InlineTokens({ tokens, side }: { tokens: DiffOp[]; side?: 'left' | 'rig
   )
 }
 
-/** Word-refine as two normal rows (− old / + new), not one combined block. */
-function UnifiedRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
+function rowWrap(
+  i: number,
+  activeHit: number | null,
+  children: ReactNode
+) {
+  return (
+    <div
+      key={i}
+      data-diff-row={i}
+      className={`diff-row${activeHit === i ? ' diff-row-hit' : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+function UnifiedRows({
+  rows,
+  activeHit,
+}: {
+  rows: Row[]
+  activeHit: number | null
+}) {
   return (
     <>
       {rows.map((row, i) => {
         if (row.type === 'single') {
           const op = row.op
-          return (
-            <div key={i} className={`op op-${op.kind}`}>
+          return rowWrap(
+            i,
+            activeHit,
+            <div className={`op op-${op.kind}`}>
               <span className="op-mark">{mark(op.kind)}</span>
               {op.text}
             </div>
           )
         }
-        return (
-          <div key={i} className="op-mod-pair">
+        return rowWrap(
+          i,
+          activeHit,
+          <div className="op-mod-pair">
             <div className="op op-del">
               <span className="op-mark">-</span>
               <span className="op-mod-line">
@@ -112,7 +157,13 @@ function UnifiedRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
   )
 }
 
-function SplitRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
+function SplitRows({
+  rows,
+  activeHit,
+}: {
+  rows: Row[]
+  activeHit: number | null
+}) {
   return (
     <>
       <div className="diff-split-head">
@@ -123,8 +174,10 @@ function SplitRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
         if (row.type === 'single') {
           const op = row.op
           if (op.kind === 'hdr') {
-            return (
-              <div key={i} className="diff-split-row diff-split-hdr">
+            return rowWrap(
+              i,
+              activeHit,
+              <div className="diff-split-row diff-split-hdr">
                 <div className="op op-hdr">{op.text}</div>
               </div>
             )
@@ -143,15 +196,19 @@ function SplitRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
                 {op.text}
               </div>
             )
-          return (
-            <div key={i} className="diff-split-row">
+          return rowWrap(
+            i,
+            activeHit,
+            <div className="diff-split-row">
               <div className={`diff-pane ${op.kind === 'del' ? 'pane-del' : ''}`}>{left}</div>
               <div className={`diff-pane ${op.kind === 'ins' ? 'pane-ins' : ''}`}>{right}</div>
             </div>
           )
         }
-        return (
-          <div key={i} className="diff-split-row">
+        return rowWrap(
+          i,
+          activeHit,
+          <div className="diff-split-row">
             <div className="diff-pane pane-del">
               <div className="op op-del">
                 <span className="op-mark">-</span>
@@ -175,26 +232,54 @@ function SplitRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
   )
 }
 
-export function DiffResult({
-  ops,
-  layout = 'unified',
-  wrap = false,
-}: {
-  ops: DiffOp[]
-  layout?: DiffLayout
-  wrap?: boolean
-}) {
+export const DiffResult = forwardRef<
+  DiffResultHandle,
+  {
+    ops: DiffOp[]
+    layout?: DiffLayout
+    wrap?: boolean
+    activeHit?: number | null
+  }
+>(function DiffResult(
+  { ops, layout = 'unified', wrap = false, activeHit = null },
+  ref
+) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const rows = groupOps(ops)
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      get scrollEl() {
+        return scrollRef.current
+      },
+      getRowCount: () => rows.length,
+      scrollToRow: (rowIndex: number) => {
+        const root = scrollRef.current
+        if (!root) return
+        const el = root.querySelector(`[data-diff-row="${rowIndex}"]`)
+        if (el instanceof HTMLElement) {
+          el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
+      },
+    }),
+    [rows.length]
+  )
+
   if (ops.length === 0) return <p className="muted">No differences (or empty inputs).</p>
 
-  const rows = groupOps(ops)
   const scrollClass = `diff-scroll${wrap ? ' wrap' : ''}`
   const outClass = `diff-out${layout === 'split' ? ' diff-split' : ''}`
 
   return (
-    <div className={scrollClass}>
+    <div className={scrollClass} ref={scrollRef}>
       <div className={outClass}>
-        {layout === 'split' ? <SplitRows rows={rows} /> : <UnifiedRows rows={rows} />}
+        {layout === 'split' ? (
+          <SplitRows rows={rows} activeHit={activeHit} />
+        ) : (
+          <UnifiedRows rows={rows} activeHit={activeHit} />
+        )}
       </div>
     </div>
   )
-}
+})
