@@ -311,11 +311,6 @@ textarea {
   margin-bottom: 0.2rem;
 }
 
-.op-mod-inline {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
 .tok-keep {
   color: var(--text);
 }

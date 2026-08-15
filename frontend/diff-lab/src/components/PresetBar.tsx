@@ -17,6 +17,8 @@ export function PresetBar({
   onPreset,
   layout,
   onLayout,
+  wrap,
+  onWrap,
   onRun,
   running,
 }: {
@@ -26,6 +28,8 @@ export function PresetBar({
   onPreset: (id: string) => void
   layout: 'unified' | 'split'
   onLayout: (layout: 'unified' | 'split') => void
+  wrap: boolean
+  onWrap: (wrap: boolean) => void
   onRun: () => void
   running: boolean
 }) {
@@ -60,6 +64,14 @@ export function PresetBar({
           <option value="unified">Unified (single)</option>
           <option value="split">Side by side</option>
         </select>
+      </label>
+      <label className="checkbox-label">
+        <span>Word wrap</span>
+        <input
+          type="checkbox"
+          checked={wrap}
+          onChange={(e) => onWrap(e.target.checked)}
+        />
       </label>
       <button type="button" onClick={onRun} disabled={running}>
         {running ? 'Comparing…' : 'Compare'}
