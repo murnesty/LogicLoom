@@ -38,6 +38,7 @@ export default function App() {
   const [detection, setDetection] = useState<Detection | null>(null)
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null)
   const [ops, setOps] = useState<DiffOp[] | null>(null)
+  const [layout, setLayout] = useState<'unified' | 'split'>('unified')
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -217,12 +218,14 @@ export default function App() {
         recommendation={recommendation}
         preset={preset}
         onPreset={setPreset}
+        layout={layout}
+        onLayout={setLayout}
         onRun={() => void onCompare()}
         running={running}
       />
 
       {error && <p className="status-warn">{error}</p>}
-      {ops && <DiffResult ops={ops} />}
+      {ops && <DiffResult ops={ops} layout={layout} />}
     </div>
   )
 }

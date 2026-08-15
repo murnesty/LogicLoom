@@ -14,6 +14,8 @@ export function PresetBar({
   recommendation,
   preset,
   onPreset,
+  layout,
+  onLayout,
   onRun,
   running,
 }: {
@@ -21,6 +23,8 @@ export function PresetBar({
   recommendation: Recommendation | null
   preset: string
   onPreset: (id: string) => void
+  layout: 'unified' | 'split'
+  onLayout: (layout: 'unified' | 'split') => void
   onRun: () => void
   running: boolean
 }) {
@@ -44,6 +48,16 @@ export function PresetBar({
               {LABELS[id] ?? id}
             </option>
           ))}
+        </select>
+      </label>
+      <label>
+        View
+        <select
+          value={layout}
+          onChange={(e) => onLayout(e.target.value as 'unified' | 'split')}
+        >
+          <option value="unified">Unified (single)</option>
+          <option value="split">Side by side</option>
         </select>
       </label>
       <button type="button" onClick={onRun} disabled={running}>
