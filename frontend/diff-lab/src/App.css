@@ -221,6 +221,30 @@ textarea {
   gap: 0.4rem 0.55rem;
 }
 
+.ctrl-risk {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #6b5420;
+  background: rgba(230, 184, 77, 0.12);
+  color: #f0d78c;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.ctrl-risk p {
+  margin: 0 0 0.35rem;
+}
+
+.ctrl-risk p:last-child {
+  margin-bottom: 0;
+}
+
+.ctrl-risk-confirm {
+  font-weight: 600;
+  color: var(--warn);
+}
+
 .ctrl-detect strong {
   text-transform: uppercase;
   letter-spacing: 0.03em;

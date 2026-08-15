@@ -26,6 +26,14 @@ export {
 } from './registry'
 export { listAlgorithms, runAlgo, normalizeOptions } from './algoRegistry'
 export {
+  assessDiffRisk,
+  assessDiffRiskFromOptions,
+  formatRiskConfirm,
+  LARGE_INPUT_CHARS,
+  type DiffRisk,
+  type DiffRiskInput,
+} from './algoRisk'
+export {
   listUnionEntries,
   resolveEntry,
   loadZipPathsFromBuffer,

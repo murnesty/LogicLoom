@@ -7,6 +7,7 @@ import {
   FINE_ALGO_IDS,
   STRUCTURE_STRATEGY_IDS,
   STRUCTURE_LABELS,
+  assessDiffRisk,
 } from '../engine'
 
 const LABELS: Record<string, string> = {
@@ -81,6 +82,7 @@ export function PresetBar({
   onIgnoreOoxmlIds,
   onRun,
   running,
+  sizeChars,
 }: {
   detection: Detection | null
   preset: string
@@ -101,8 +103,17 @@ export function PresetBar({
   onIgnoreOoxmlIds: (v: boolean) => void
   onRun: () => void
   running: boolean
+  /** Optional known max(input) size for risk notes. */
+  sizeChars?: number
 }) {
   const showStructure = preset === 'structured'
+  const risk = assessDiffRisk({
+    preset,
+    coarse,
+    fine,
+    structure,
+    sizeChars,
+  })
   return (
     <section className="ctrl-panel">
       <div className="ctrl-panel-top">
@@ -122,10 +133,26 @@ export function PresetBar({
           className="ctrl-run"
           onClick={onRun}
           disabled={running}
+          title={
+            risk.needsConfirm
+              ? 'This combo may be slow — you will be asked to confirm'
+              : undefined
+          }
         >
           {running ? 'Comparing…' : 'Compare'}
         </button>
       </div>
+
+      {risk.warnings.length > 0 && (
+        <div className="ctrl-risk" role="status">
+          {risk.warnings.map((w) => (
+            <p key={w}>{w}</p>
+          ))}
+          {risk.needsConfirm && (
+            <p className="ctrl-risk-confirm">Compare will ask for confirmation.</p>
+          )}
+        </div>
+      )}
 
       <div className="ctrl-row ctrl-row-fields">
         <Field label="Preset">

@@ -6,6 +6,8 @@ import {
   loadZipPathsFromBuffer,
   readZipEntryFromBuffer,
   DEFAULT_DIFF_OPTIONS,
+  assessDiffRisk,
+  formatRiskConfirm,
   type Detection,
   type DiffOp,
   type EntryAvailability,
@@ -47,6 +49,14 @@ export default function App() {
   const [wrap, setWrap] = useState(false)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const estimatedSizeChars = useMemo(() => {
+    if (mode === 'paste') return Math.max(pasteA.length, pasteB.length)
+    // Zip entry size unknown until Compare; use archive byte length as rough proxy
+    const a = bufA?.byteLength ?? 0
+    const b = bufB?.byteLength ?? 0
+    return Math.max(a, b)
+  }, [mode, pasteA, pasteB, bufA, bufB])
 
   const showEntryPicker = useMemo(() => {
     if (mode !== 'files') return false
@@ -152,12 +162,25 @@ export default function App() {
 
   async function onCompare() {
     setError(null)
-    setRunning(true)
     setOps(null)
     try {
+      // Resolve texts first so size-based confirm is accurate
+      const { textA, textB, nameA, nameB, availNote } = await resolveTexts()
+      const sizeChars = Math.max(textA.length, textB.length)
+      const risk = assessDiffRisk({
+        preset,
+        coarse,
+        fine,
+        structure,
+        sizeChars,
+      })
+      if (risk.needsConfirm && !window.confirm(formatRiskConfirm(risk))) {
+        return
+      }
+
+      setRunning(true)
       // Let the loading backdrop paint before heavy work
       await new Promise((r) => setTimeout(r, 40))
-      const { textA, textB, nameA, nameB, availNote } = await resolveTexts()
       const d = detect(nameA, nameB, textA, textB)
       setDetection(d)
       const result = runPreset(preset, textA, textB, d, {
@@ -254,6 +277,7 @@ export default function App() {
           onIgnoreOoxmlIds={setIgnoreOoxmlIds}
           onRun={() => void onCompare()}
           running={running}
+          sizeChars={estimatedSizeChars}
         />
 
         {error && <p className="status-warn">{error}</p>}
