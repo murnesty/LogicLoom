@@ -4,6 +4,7 @@ import { myersSes } from './myers'
 import { leadingWsEqual, splitLines, tokenizeWords } from './tokens'
 import { flattenJson, flattenXml, tryParseJson, tryParseXml } from './flatten'
 import { recommend } from './detect'
+import { tryPretty } from './pretty'
 
 /** Path key for flattened lines: everything before first ` = `. */
 export function pathKey(line: string): string {
@@ -132,6 +133,20 @@ function structuredOrText(a: string, b: string, d: Detection): DiffOp[] {
   ]
 }
 
+function prettyThenText(a: string, b: string): DiffOp[] {
+  const pa = tryPretty(a)
+  const pb = tryPretty(b)
+  const ops: DiffOp[] = []
+  const notes = [pa.note, pb.note].filter(Boolean)
+  if (notes.length > 0) {
+    ops.push({ kind: 'hdr', text: `[pretty] ${[...new Set(notes)].join('; ')} → text` })
+  } else {
+    ops.push({ kind: 'hdr', text: '[pretty] not JSON/XML — raw text' })
+  }
+  ops.push(...lineThenWord(pa.text, pb.text, false))
+  return ops
+}
+
 export function registerBuiltinPresets(): void {
   registerPreset({
     id: 'strict',
@@ -147,6 +162,11 @@ export function registerBuiltinPresets(): void {
     id: 'ignore-ws',
     label: 'ignore leading spaces, then word refine',
     run: (a, b) => lineThenWord(a, b, true),
+  })
+  registerPreset({
+    id: 'pretty',
+    label: 'prettify XML/JSON then text diff',
+    run: (a, b) => prettyThenText(a, b),
   })
   registerPreset({
     id: 'structured',

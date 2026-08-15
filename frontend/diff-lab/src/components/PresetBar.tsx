@@ -6,6 +6,7 @@ const LABELS: Record<string, string> = {
   text: 'text',
   strict: 'strict',
   'ignore-ws': 'ignore-ws',
+  pretty: 'pretty (XML/JSON → text)',
   structured: 'structured',
 }
 
