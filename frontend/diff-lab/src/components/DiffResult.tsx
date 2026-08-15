@@ -64,81 +64,9 @@ function InlineTokens({ tokens, side }: { tokens: DiffOp[]; side?: 'left' | 'rig
   )
 }
 
-export function DiffResult({
-  ops,
-  layout = 'unified',
-  wrap = false,
-}: {
-  ops: DiffOp[]
-  layout?: DiffLayout
-  wrap?: boolean
-}) {
-  if (ops.length === 0) return <p className="muted">No differences (or empty inputs).</p>
-
-  const rows = groupOps(ops)
-  const outClass = `diff-out${layout === 'split' ? ' diff-split' : ''}${wrap ? ' wrap' : ''}`
-
-  if (layout === 'split') {
-    return (
-      <div className={outClass}>
-        <div className="diff-split-head">
-          <div className="diff-pane-label">A (left)</div>
-          <div className="diff-pane-label">B (right)</div>
-        </div>
-        {rows.map((row, i) => {
-          if (row.type === 'single') {
-            const op = row.op
-            if (op.kind === 'hdr') {
-              return (
-                <div key={i} className="diff-split-row diff-split-hdr">
-                  <div className="op op-hdr">{op.text}</div>
-                </div>
-              )
-            }
-            const left =
-              op.kind === 'ins' ? null : (
-                <div className={`op op-${op.kind === 'keep' ? 'keep' : 'del'}`}>
-                  <span className="op-mark">{op.kind === 'del' ? '-' : ' '}</span>
-                  {op.text}
-                </div>
-              )
-            const right =
-              op.kind === 'del' ? null : (
-                <div className={`op op-${op.kind === 'keep' ? 'keep' : 'ins'}`}>
-                  <span className="op-mark">{op.kind === 'ins' ? '+' : ' '}</span>
-                  {op.text}
-                </div>
-              )
-            return (
-              <div key={i} className="diff-split-row">
-                <div className={`diff-pane ${op.kind === 'del' ? 'pane-del' : ''}`}>{left}</div>
-                <div className={`diff-pane ${op.kind === 'ins' ? 'pane-ins' : ''}`}>{right}</div>
-              </div>
-            )
-          }
-          return (
-            <div key={i} className="diff-split-row diff-split-mod">
-              <div className="diff-pane pane-mod">
-                <div className="op-mod-hdr">{row.header.text}</div>
-                <div className="op-mod-inline">
-                  <InlineTokens tokens={row.inline} side="left" />
-                </div>
-              </div>
-              <div className="diff-pane pane-mod">
-                <div className="op-mod-hdr">{row.header.text}</div>
-                <div className="op-mod-inline">
-                  <InlineTokens tokens={row.inline} side="right" />
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
+function UnifiedRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
   return (
-    <pre className={outClass}>
+    <>
       {rows.map((row, i) => {
         if (row.type === 'single') {
           const op = row.op
@@ -158,6 +86,89 @@ export function DiffResult({
           </div>
         )
       })}
-    </pre>
+    </>
+  )
+}
+
+function SplitRows({ rows }: { rows: ReturnType<typeof groupOps> }) {
+  return (
+    <>
+      <div className="diff-split-head">
+        <div className="diff-pane-label">A (left)</div>
+        <div className="diff-pane-label">B (right)</div>
+      </div>
+      {rows.map((row, i) => {
+        if (row.type === 'single') {
+          const op = row.op
+          if (op.kind === 'hdr') {
+            return (
+              <div key={i} className="diff-split-row diff-split-hdr">
+                <div className="op op-hdr">{op.text}</div>
+              </div>
+            )
+          }
+          const left =
+            op.kind === 'ins' ? null : (
+              <div className={`op op-${op.kind === 'keep' ? 'keep' : 'del'}`}>
+                <span className="op-mark">{op.kind === 'del' ? '-' : ' '}</span>
+                {op.text}
+              </div>
+            )
+          const right =
+            op.kind === 'del' ? null : (
+              <div className={`op op-${op.kind === 'keep' ? 'keep' : 'ins'}`}>
+                <span className="op-mark">{op.kind === 'ins' ? '+' : ' '}</span>
+                {op.text}
+              </div>
+            )
+          return (
+            <div key={i} className="diff-split-row">
+              <div className={`diff-pane ${op.kind === 'del' ? 'pane-del' : ''}`}>{left}</div>
+              <div className={`diff-pane ${op.kind === 'ins' ? 'pane-ins' : ''}`}>{right}</div>
+            </div>
+          )
+        }
+        return (
+          <div key={i} className="diff-split-row diff-split-mod">
+            <div className="diff-pane pane-mod">
+              <div className="op-mod-hdr">{row.header.text}</div>
+              <div className="op-mod-inline">
+                <InlineTokens tokens={row.inline} side="left" />
+              </div>
+            </div>
+            <div className="diff-pane pane-mod">
+              <div className="op-mod-hdr">{row.header.text}</div>
+              <div className="op-mod-inline">
+                <InlineTokens tokens={row.inline} side="right" />
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
+export function DiffResult({
+  ops,
+  layout = 'unified',
+  wrap = false,
+}: {
+  ops: DiffOp[]
+  layout?: DiffLayout
+  wrap?: boolean
+}) {
+  if (ops.length === 0) return <p className="muted">No differences (or empty inputs).</p>
+
+  const rows = groupOps(ops)
+  const scrollClass = `diff-scroll${wrap ? ' wrap' : ''}`
+  const outClass = `diff-out${layout === 'split' ? ' diff-split' : ''}`
+
+  return (
+    <div className={scrollClass}>
+      <div className={outClass}>
+        {layout === 'split' ? <SplitRows rows={rows} /> : <UnifiedRows rows={rows} />}
+      </div>
+    </div>
   )
 }

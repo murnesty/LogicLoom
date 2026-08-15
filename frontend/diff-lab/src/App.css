@@ -172,28 +172,55 @@ textarea {
   margin: 0.25rem 0;
 }
 
+.diff-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid #2c3a4f;
+  background: #0c1016;
+}
+
 .diff-out {
   margin: 0;
   padding: 0.5rem;
   background: #0c1016;
-  border-radius: 10px;
-  border: 1px solid #2c3a4f;
-  overflow: auto;
   font-family: ui-monospace, Consolas, monospace;
   font-size: 0.82rem;
+  /* Grow with long unwrapped lines so row backgrounds span full content */
+  width: max-content;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
+.diff-scroll.wrap .diff-out {
   width: 100%;
+  max-width: 100%;
 }
 
 .diff-out .op,
 .diff-out .op-mod-inline {
   white-space: pre;
   word-break: normal;
+  overflow-wrap: normal;
 }
 
-.diff-out.wrap .op,
-.diff-out.wrap .op-mod-inline {
+.diff-scroll.wrap .diff-out .op,
+.diff-scroll.wrap .diff-out .op-mod-inline {
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.diff-out .op {
+  display: block;
+  box-sizing: border-box;
+}
+
+.diff-scroll:not(.wrap) .diff-out .op,
+.diff-scroll:not(.wrap) .diff-out .op-mod {
+  width: max-content;
+  min-width: 100%;
 }
 
 .checkbox-label {
