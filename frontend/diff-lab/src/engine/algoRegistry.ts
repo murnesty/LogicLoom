@@ -52,6 +52,7 @@ export function normalizeOptions(opts?: Partial<DiffOptions>): DiffOptions {
     fine: opts?.fine ?? DEFAULT_DIFF_OPTIONS.fine,
     structure: opts?.structure ?? DEFAULT_DIFF_OPTIONS.structure,
     sortAttrs: opts?.sortAttrs ?? DEFAULT_DIFF_OPTIONS.sortAttrs,
+    ignoreOoxmlIds: opts?.ignoreOoxmlIds ?? DEFAULT_DIFF_OPTIONS.ignoreOoxmlIds,
   }
 }
 

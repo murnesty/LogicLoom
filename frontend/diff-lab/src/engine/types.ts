@@ -22,12 +22,14 @@ export type Algorithm = {
  * Fine = modified-line word refine.
  * Structure = how JSON/XML is aligned before/instead of flat SES (structured preset).
  * sortAttrs = normalize XML/HTML attribute order when pretty-printing (order is insignificant).
+ * ignoreOoxmlIds = drop Word OOXML noise attrs (rsid*, w:id, paraId/textId); no-op if not OOXML.
  */
 export type DiffOptions = {
   coarse: string
   fine: string
   structure: string
   sortAttrs: boolean
+  ignoreOoxmlIds: boolean
 }
 
 export const DEFAULT_DIFF_OPTIONS: DiffOptions = {
@@ -35,6 +37,7 @@ export const DEFAULT_DIFF_OPTIONS: DiffOptions = {
   fine: 'myers',
   structure: 'path-key',
   sortAttrs: true,
+  ignoreOoxmlIds: true,
 }
 
 export const COARSE_ALGO_IDS = [

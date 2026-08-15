@@ -1,3 +1,5 @@
+import { filterOoxmlNoiseAttrs, looksLikeOoxml } from './ooxml'
+
 /** Pretty-print JSON with 2-space indent. Throws if invalid. */
 export function prettyJson(text: string): string {
   return JSON.stringify(JSON.parse(text), null, 2)
@@ -6,6 +8,11 @@ export function prettyJson(text: string): string {
 export type PrettyXmlOptions = {
   /** Sort attributes by name (XML/HTML order is insignificant). Default true. */
   sortAttrs?: boolean
+  /**
+   * Drop OOXML noise attrs (rsid*, w:id, paraId/textId) when the doc is Word ML.
+   * Default true; no-op for non-OOXML.
+   */
+  ignoreOoxmlIds?: boolean
 }
 
 /** Parse `name="value"` / `name='value'` attrs from the inside of a tag (after element name). */
@@ -29,6 +36,15 @@ function maybeSortAttrs(attrs: string[], sort: boolean): string[] {
   return [...attrs].sort((a, b) => attrName(a).localeCompare(attrName(b)))
 }
 
+function prepareAttrs(
+  attrs: string[],
+  sortAttrs: boolean,
+  stripOoxmlIds: boolean
+): string[] {
+  const filtered = stripOoxmlIds ? filterOoxmlNoiseAttrs(attrs) : attrs
+  return maybeSortAttrs(filtered, sortAttrs)
+}
+
 /**
  * Format one tag onto its own line(s).
  * - Every element open / close / self-close is its own line (plus indent).
@@ -38,7 +54,8 @@ function maybeSortAttrs(attrs: string[], sort: boolean): string[] {
 export function formatXmlTagLine(
   line: string,
   depth: number,
-  sortAttrs = true
+  sortAttrs = true,
+  stripOoxmlIds = false
 ): string[] {
   const indent = '  '.repeat(depth)
   const attrIndent = '  '.repeat(depth + 1)
@@ -58,7 +75,11 @@ export function formatXmlTagLine(
     /^<([A-Za-z_:][\w:.-]*)(\s+[^>]+)>([\s\S]*)<\/\1\s*>$/.exec(line)
   if (pairWithAttrs) {
     const name = pairWithAttrs[1]
-    const attrs = maybeSortAttrs(parseXmlAttrList(pairWithAttrs[2]), sortAttrs)
+    const attrs = prepareAttrs(
+      parseXmlAttrList(pairWithAttrs[2]),
+      sortAttrs,
+      stripOoxmlIds
+    )
     const inner = pairWithAttrs[3]
     const openLines = expandOpenTag(name, attrs, depth, false)
     if (!inner) {
@@ -73,7 +94,11 @@ export function formatXmlTagLine(
   if (!open) return [`${indent}${line}`]
 
   const name = open[1]
-  const attrs = maybeSortAttrs(parseXmlAttrList(open[2] ?? ''), sortAttrs)
+  const attrs = prepareAttrs(
+    parseXmlAttrList(open[2] ?? ''),
+    sortAttrs,
+    stripOoxmlIds
+  )
   return expandOpenTag(name, attrs, depth, selfClose || open[3] === '/')
 }
 
@@ -112,6 +137,8 @@ function expandOpenTag(
  */
 export function prettyXml(text: string, options: PrettyXmlOptions = {}): string {
   const sortAttrs = options.sortAttrs !== false
+  const ignoreOoxmlIds = options.ignoreOoxmlIds !== false
+  const stripOoxmlIds = ignoreOoxmlIds && looksLikeOoxml(text)
   const src = text.replace(/^\uFEFF/, '').trim()
   if (!src.startsWith('<')) throw new Error('Not XML')
 
@@ -124,6 +151,9 @@ export function prettyXml(text: string, options: PrettyXmlOptions = {}): string 
   for (const raw of rawLines) {
     const line = raw.trim()
     if (!line) continue
+
+    // <w:id w:val="…"/> is ephemeral in OOXML (not r:id relationships).
+    if (stripOoxmlIds && /^<\/?w:id\b/i.test(line)) continue
 
     const isClosing = /^<\//.test(line)
     const isDeclOrComment = /^<\?/.test(line) || /^<!/.test(line)
@@ -142,7 +172,7 @@ export function prettyXml(text: string, options: PrettyXmlOptions = {}): string 
 
     const formatted = isDeclOrComment
       ? [`${'  '.repeat(depth)}${line}`]
-      : formatXmlTagLine(line, depth, sortAttrs)
+      : formatXmlTagLine(line, depth, sortAttrs, stripOoxmlIds)
     out.push(...formatted)
 
     if (isOpening) depth++
@@ -174,12 +204,18 @@ export function tryPretty(
     try {
       const before = text.split(/\r?\n/).length
       const sortAttrs = options.sortAttrs !== false
-      const out = prettyXml(text, { sortAttrs })
+      const ignoreOoxmlIds = options.ignoreOoxmlIds !== false
+      const ooxml = looksLikeOoxml(text)
+      const stripped = ignoreOoxmlIds && ooxml
+      const out = prettyXml(text, { sortAttrs, ignoreOoxmlIds })
       const after = out.split('\n').length
-      const sortNote = sortAttrs ? '; attrs sorted' : ''
+      const bits: string[] = []
+      if (sortAttrs) bits.push('attrs sorted')
+      if (stripped) bits.push('OOXML ids ignored')
+      const extra = bits.length ? `; ${bits.join('; ')}` : ''
       return {
         text: out,
-        note: `prettified XML (${before} → ${after} lines${sortNote})`,
+        note: `prettified XML (${before} → ${after} lines${extra})`,
       }
     } catch {
       return { text, note: 'XML pretty failed — using raw' }

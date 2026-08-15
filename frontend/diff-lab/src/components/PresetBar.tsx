@@ -39,6 +39,8 @@ export function PresetBar({
   onWrap,
   sortAttrs,
   onSortAttrs,
+  ignoreOoxmlIds,
+  onIgnoreOoxmlIds,
   onRun,
   running,
 }: {
@@ -58,6 +60,8 @@ export function PresetBar({
   onWrap: (wrap: boolean) => void
   sortAttrs: boolean
   onSortAttrs: (v: boolean) => void
+  ignoreOoxmlIds: boolean
+  onIgnoreOoxmlIds: (v: boolean) => void
   onRun: () => void
   running: boolean
 }) {
@@ -133,6 +137,17 @@ export function PresetBar({
           type="checkbox"
           checked={sortAttrs}
           onChange={(e) => onSortAttrs(e.target.checked)}
+        />
+      </label>
+      <label
+        className="checkbox-label"
+        title="Word OOXML only: drop rsid*, w:id, w14:paraId/textId (no-op for other XML)"
+      >
+        <span>Ignore OOXML ids</span>
+        <input
+          type="checkbox"
+          checked={ignoreOoxmlIds}
+          onChange={(e) => onIgnoreOoxmlIds(e.target.checked)}
         />
       </label>
       <label className="checkbox-label">

@@ -40,6 +40,9 @@ export default function App() {
   const [fine, setFine] = useState(DEFAULT_DIFF_OPTIONS.fine)
   const [structure, setStructure] = useState(DEFAULT_DIFF_OPTIONS.structure)
   const [sortAttrs, setSortAttrs] = useState(DEFAULT_DIFF_OPTIONS.sortAttrs)
+  const [ignoreOoxmlIds, setIgnoreOoxmlIds] = useState(
+    DEFAULT_DIFF_OPTIONS.ignoreOoxmlIds
+  )
   const [detection, setDetection] = useState<Detection | null>(null)
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null)
   const [ops, setOps] = useState<DiffOp[] | null>(null)
@@ -166,6 +169,7 @@ export default function App() {
         fine,
         structure,
         sortAttrs,
+        ignoreOoxmlIds,
       })
       if (availNote) {
         setOps([{ kind: 'hdr', text: `[${availNote}]` }, ...result])
@@ -241,6 +245,8 @@ export default function App() {
         onWrap={setWrap}
         sortAttrs={sortAttrs}
         onSortAttrs={setSortAttrs}
+        ignoreOoxmlIds={ignoreOoxmlIds}
+        onIgnoreOoxmlIds={setIgnoreOoxmlIds}
         onRun={() => void onCompare()}
         running={running}
       />

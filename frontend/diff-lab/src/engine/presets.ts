@@ -105,7 +105,10 @@ function structuredOrText(
 
 function prettyThenText(a: string, b: string, options: DiffOptions): DiffOp[] {
   const opts = normalizeOptions(options)
-  const prettyOpts = { sortAttrs: opts.sortAttrs }
+  const prettyOpts = {
+    sortAttrs: opts.sortAttrs,
+    ignoreOoxmlIds: opts.ignoreOoxmlIds,
+  }
   const pa = tryPretty(a, prettyOpts)
   const pb = tryPretty(b, prettyOpts)
   const ops: DiffOp[] = []
