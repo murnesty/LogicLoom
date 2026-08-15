@@ -3,7 +3,7 @@ import { registerPreset, runPreset } from './registry'
 import { leadingWsEqual, splitLines, tokenizeWords } from './tokens'
 import { flattenJson, flattenXml, tryParseJson, tryParseXml } from './flatten'
 import { recommend } from './detect'
-import { tryPretty } from './pretty'
+import { tryPretty, shouldWordRefineLine } from './pretty'
 import { normalizeOptions, runAlgo } from './algoRegistry'
 
 /** Path key for flattened lines: everything before first ` = `. */
@@ -37,9 +37,21 @@ function refineAdjacentLineEdits(
       newL = cur.text
       oldL = next.text
     }
-    if (oldL !== null && newL !== null && oldL.length > 0 && newL.length > 0 && !eq(oldL, newL)) {
-      ops.push({ kind: 'hdr', text: `~ modified line [${fine}]` })
-      ops.push(...wordRefineOps(oldL, newL, fine))
+    if (
+      oldL !== null &&
+      newL !== null &&
+      oldL.length > 0 &&
+      newL.length > 0 &&
+      !eq(oldL, newL)
+    ) {
+      if (shouldWordRefineLine(oldL, newL)) {
+        ops.push({ kind: 'hdr', text: `~ modified line [${fine}]` })
+        ops.push(...wordRefineOps(oldL, newL, fine))
+      } else {
+        // Keep as separate lines so long XML tags stay readable after pretty
+        ops.push({ kind: 'del', text: oldL })
+        ops.push({ kind: 'ins', text: newL })
+      }
       i++
       continue
     }
@@ -88,8 +100,13 @@ export function refineSamePathEdits(ses: DiffOp[], fine = 'myers'): DiffOp[] {
       const delOp = op.kind === 'del' ? op : ses[partner]
       const insOp = op.kind === 'ins' ? op : ses[partner]
       const key = pathKey(delOp.text)
-      ops.push({ kind: 'hdr', text: `~ modified ${key} [${fine}]` })
-      ops.push(...wordRefineOps(delOp.text, insOp.text, fine))
+      if (shouldWordRefineLine(delOp.text, insOp.text)) {
+        ops.push({ kind: 'hdr', text: `~ modified ${key} [${fine}]` })
+        ops.push(...wordRefineOps(delOp.text, insOp.text, fine))
+      } else {
+        ops.push({ kind: 'del', text: delOp.text })
+        ops.push({ kind: 'ins', text: insOp.text })
+      }
       continue
     }
     ops.push(op)
