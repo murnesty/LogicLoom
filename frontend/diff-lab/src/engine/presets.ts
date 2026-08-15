@@ -1,8 +1,7 @@
 import type { Detection, DiffOp, DiffOptions, EqualsFn } from './types'
-import { registerPreset, runPreset } from './registry'
+import { registerPreset } from './registry'
 import { leadingWsEqual, splitLines, tokenizeWords } from './tokens'
 import { tryParseJson, tryParseXml } from './flatten'
-import { recommend } from './detect'
 import { tryPretty, shouldWordRefineLine } from './pretty'
 import { normalizeOptions, runAlgo } from './algoRegistry'
 import { runStructure } from './structural'
@@ -158,15 +157,6 @@ export function registerBuiltinPresets(): void {
     id: 'structured',
     label: 'JSON/XML path flatten + refine',
     run: structuredOrText,
-  })
-  registerPreset({
-    id: 'recommended',
-    label: 'auto (rules)',
-    run: (a, b, d, options) => {
-      const { id } = recommend(d)
-      if (id === 'recommended') return lineThenWord(a, b, false, options)
-      return runPreset(id, a, b, d, options)
-    },
   })
 }
 

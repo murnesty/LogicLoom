@@ -6,8 +6,6 @@ export type ContentKind = 'json' | 'xml' | 'html' | 'markdown' | 'text'
 
 export type Detection = { kind: ContentKind; confidence: string; detail: string }
 
-export type Recommendation = { id: string; reason: string }
-
 export type EqualsFn = (x: string, y: string) => boolean
 
 export type Algorithm = {

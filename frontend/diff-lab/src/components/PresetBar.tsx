@@ -1,4 +1,4 @@
-import type { Detection, Recommendation } from '../engine/types'
+import type { Detection } from '../engine/types'
 import {
   listPresetIds,
   listAlgorithms,
@@ -9,7 +9,6 @@ import {
 } from '../engine'
 
 const LABELS: Record<string, string> = {
-  recommended: 'recommended (auto)',
   text: 'text',
   strict: 'strict',
   'ignore-ws': 'ignore-ws',
@@ -20,11 +19,8 @@ const LABELS: Record<string, string> = {
 const algoLabel = (id: string) =>
   listAlgorithms().find((a) => a.id === id)?.label ?? id
 
-const structuredPresets = new Set(['structured', 'recommended'])
-
 export function PresetBar({
   detection,
-  recommendation,
   preset,
   onPreset,
   coarse,
@@ -45,7 +41,6 @@ export function PresetBar({
   running,
 }: {
   detection: Detection | null
-  recommendation: Recommendation | null
   preset: string
   onPreset: (id: string) => void
   coarse: string
@@ -65,18 +60,13 @@ export function PresetBar({
   onRun: () => void
   running: boolean
 }) {
-  const showStructure = structuredPresets.has(preset)
+  const showStructure = preset === 'structured'
   return (
     <div className="preset-bar">
       {detection && (
         <p>
           Detected: <strong>{detection.kind}</strong> ({detection.confidence}) —{' '}
           {detection.detail}
-        </p>
-      )}
-      {recommendation && (
-        <p>
-          Recommend: <strong>{recommendation.id}</strong> — {recommendation.reason}
         </p>
       )}
       <label>

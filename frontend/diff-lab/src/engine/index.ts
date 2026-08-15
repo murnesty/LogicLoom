@@ -13,7 +13,7 @@ export {
 export { myersSes } from './myers'
 export { splitLines, tokenizeWords, leadingWsEqual } from './tokens'
 export { flattenJson, flattenXml } from './flatten'
-export { detect, recommend } from './detect'
+export { detect } from './detect'
 export { tryPretty, prettyJson, prettyXml } from './pretty'
 export { looksLikeOoxml, isOoxmlNoiseAttr } from './ooxml'
 export {

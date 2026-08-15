@@ -5,7 +5,6 @@ import {
   listUnionEntries,
   readZipEntryFromBuffer,
   detect,
-  recommend,
   runPreset,
 } from './index'
 
@@ -36,7 +35,7 @@ describe('SampleDocuments smoke', () => {
       expect(textA && textB).toBeTruthy()
 
       const d = detect('word/document.xml', 'word/document.xml', textA!, textB!)
-      expect(recommend(d).id).toBe('structured')
+      expect(d.kind).toBe('xml')
       expect(runPreset('strict', textA!, textB!, d).length).toBeGreaterThan(0)
     }
   )

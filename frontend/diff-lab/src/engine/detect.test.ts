@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { flattenJson, flattenXml } from './flatten'
-import { detect, recommend } from './detect'
+import { detect } from './detect'
 import './presets'
 import { runPreset } from './registry'
 
@@ -17,15 +17,9 @@ describe('flatten', () => {
   })
 })
 
-describe('detect/recommend', () => {
+describe('detect', () => {
   it('detects xml', () => {
     expect(detect('a.xml', 'b.xml', '<r/>', '<r/>').kind).toBe('xml')
-  })
-
-  it('recommends structured for xml', () => {
-    expect(recommend({ kind: 'xml', confidence: 'high', detail: '' }).id).toBe(
-      'structured'
-    )
   })
 
   it('structured preset emits path ops', () => {

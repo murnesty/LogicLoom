@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   detect,
-  recommend,
   runPreset,
   listUnionEntries,
   loadZipPathsFromBuffer,
@@ -10,7 +9,6 @@ import {
   type Detection,
   type DiffOp,
   type EntryAvailability,
-  type Recommendation,
 } from './engine'
 import { DiffResult } from './components/DiffResult'
 import { EntrySelect } from './components/EntrySelect'
@@ -44,7 +42,6 @@ export default function App() {
     DEFAULT_DIFF_OPTIONS.ignoreOoxmlIds
   )
   const [detection, setDetection] = useState<Detection | null>(null)
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null)
   const [ops, setOps] = useState<DiffOp[] | null>(null)
   const [layout, setLayout] = useState<'unified' | 'split'>('split')
   const [wrap, setWrap] = useState(false)
@@ -161,9 +158,7 @@ export default function App() {
       await new Promise((r) => requestAnimationFrame(() => r(undefined)))
       const { textA, textB, nameA, nameB, availNote } = await resolveTexts()
       const d = detect(nameA, nameB, textA, textB)
-      const rec = recommend(d)
       setDetection(d)
-      setRecommendation(rec)
       const result = runPreset(preset, textA, textB, d, {
         coarse,
         fine,
@@ -230,7 +225,6 @@ export default function App() {
 
       <PresetBar
         detection={detection}
-        recommendation={recommendation}
         preset={preset}
         onPreset={setPreset}
         coarse={coarse}
