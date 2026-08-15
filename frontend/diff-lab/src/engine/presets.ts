@@ -143,15 +143,32 @@ function prettyThenText(a: string, b: string, options: DiffOptions): DiffOp[] {
 
   const la = splitLines(pa.text)
   const lb = splitLines(pb.text)
-  if (la.length > 80_000 || lb.length > 80_000) {
+  // Tag-per-line pretty on big OOXML can exceed 100k rows; SES itself is safe now.
+  if (la.length > 250_000 || lb.length > 250_000) {
     ops.push({
       kind: 'hdr',
-      text: `[pretty] too many lines (${la.length.toLocaleString()} vs ${lb.length.toLocaleString()}) — abort to avoid browser OOM. Try structured preset, or a smaller zip entry.`,
+      text: `[pretty] too many lines (${la.length.toLocaleString()} vs ${lb.length.toLocaleString()}) — abort. Try structured preset.`,
     })
     return ops
   }
 
-  ops.push(...lineThenWord(pa.text, pb.text, false, opts, false))
+  const body = lineThenWord(pa.text, pb.text, false, opts, false)
+  const MAX_OPS = 40_000
+  if (body.length > MAX_OPS) {
+    ops.push({
+      kind: 'hdr',
+      text: `[pretty] large result (${body.length.toLocaleString()} ops) — showing first/last ${MAX_OPS / 2} each`,
+    })
+    const half = MAX_OPS / 2
+    for (let i = 0; i < half; i++) ops.push(body[i])
+    ops.push({
+      kind: 'hdr',
+      text: `… ${body.length - MAX_OPS} ops omitted …`,
+    })
+    for (let i = body.length - half; i < body.length; i++) ops.push(body[i])
+    return ops
+  }
+  for (let i = 0; i < body.length; i++) ops.push(body[i])
   return ops
 }
 

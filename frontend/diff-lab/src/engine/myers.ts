@@ -2,15 +2,16 @@ import type { Algorithm, DiffOp, EqualsFn } from './types'
 
 const defaultEq: EqualsFn = (x, y) => x === y
 
-/** Above this, emit a summary keep-header instead of N keep ops (DOM/RAM). */
+/** Above this, summarize identical instead of N keep ops. */
 const IDENTICAL_EXPAND_MAX = 4_000
 
-/** Windows larger than this use anchor split instead of one Myers pass. */
-const MYERS_DIRECT_MAX = 4_000
+/** Full Myers+trace only below this (avoids OOM + stack overflow). */
+const MYERS_TRACE_MAX = 3_000
 
 /**
- * Myers SES — linear space via middle-snake divide & conquer.
- * (No per-d Int32Array.from traces — those OOM on large OOXML.)
+ * Myers SES for Diff Lab.
+ * - Small pockets: classic O(ND) with V-trace (bounded size).
+ * - Large pockets: unique-line anchors + greedy (iterative, no deep recursion).
  */
 export function myersSes(
   a: string[],
@@ -40,109 +41,220 @@ export function myersSes(
     }
   }
 
-  const out: DiffOp[] = []
-  diffRange(a, 0, a.length, b, 0, b.length, equals, out)
+  let loA = 0
+  let loB = 0
+  let hiA = a.length
+  let hiB = b.length
+
+  while (loA < hiA && loB < hiB && equals(a[loA], b[loB])) {
+    loA++
+    loB++
+  }
+  while (hiA > loA && hiB > loB && equals(a[hiA - 1], b[hiB - 1])) {
+    hiA--
+    hiB--
+  }
+
+  const prefix: DiffOp[] = []
+  for (let i = 0; i < loA; i++) prefix.push({ kind: 'keep', text: a[i] })
+  const suffix: DiffOp[] = []
+  for (let i = hiA; i < a.length; i++) suffix.push({ kind: 'keep', text: a[i] })
+
+  const midA = a.slice(loA, hiA)
+  const midB = b.slice(loB, hiB)
+
+  if (midA.length === 0 && midB.length === 0) {
+    return concatOps([prefix, suffix])
+  }
+  if (midA.length === 0) {
+    return concatOps([
+      prefix,
+      midB.map((text) => ({ kind: 'ins' as const, text })),
+      suffix,
+    ])
+  }
+  if (midB.length === 0) {
+    return concatOps([
+      prefix,
+      midA.map((text) => ({ kind: 'del' as const, text })),
+      suffix,
+    ])
+  }
+
+  const mid =
+    midA.length + midB.length <= MYERS_TRACE_MAX
+      ? myersTrace(midA, midB, equals)
+      : largeAlign(midA, midB, equals)
+
+  return concatOps([prefix, mid, suffix])
+}
+
+function concatOps(parts: DiffOp[][]): DiffOp[] {
+  let n = 0
+  for (const p of parts) n += p.length
+  const out = new Array<DiffOp>(n)
+  let i = 0
+  for (const p of parts) {
+    for (let j = 0; j < p.length; j++) out[i++] = p[j]
+  }
   return out
 }
 
-function diffRange(
-  a: string[],
-  a0: number,
-  a1: number,
-  b: string[],
-  b0: number,
-  b1: number,
-  equals: EqualsFn,
-  out: DiffOp[]
-): void {
-  // Common prefix
-  while (a0 < a1 && b0 < b1 && equals(a[a0], b[b0])) {
-    out.push({ kind: 'keep', text: a[a0] })
-    a0++
-    b0++
-  }
+/** Classic Myers with V copies — only for small n+m. */
+function myersTrace(a: string[], b: string[], equals: EqualsFn): DiffOp[] {
+  const n = a.length
+  const m = b.length
+  const max = n + m
+  const offset = max
+  const v = new Int32Array(2 * max + 2)
+  const trace: Int32Array[] = []
 
-  // Common suffix (remember, emit after middle)
-  let sA = 0
-  let sB = 0
-  while (a0 < a1 - sA && b0 < b1 - sB && equals(a[a1 - 1 - sA], b[b1 - 1 - sB])) {
-    sA++
-    sB++
-  }
-  const aEnd = a1 - sA
-  const bEnd = b1 - sB
-
-  const n = aEnd - a0
-  const m = bEnd - b0
-
-  if (n > 0 && m > 0) {
-    if (n <= MYERS_DIRECT_MAX && m <= MYERS_DIRECT_MAX) {
-      const snake = middleSnake(a, a0, aEnd, b, b0, bEnd, equals)
-      if (snake.x === 0 && snake.y === 0 && snake.u === 0 && snake.v === 0) {
-        // empty snake at origin — force progress
-        if (n > m) {
-          out.push({ kind: 'del', text: a[a0] })
-          diffRange(a, a0 + 1, aEnd, b, b0, bEnd, equals, out)
-        } else {
-          out.push({ kind: 'ins', text: b[b0] })
-          diffRange(a, a0, aEnd, b, b0 + 1, bEnd, equals, out)
-        }
+  let foundD = -1
+  outer: for (let d = 0; d <= max; d++) {
+    for (let k = -d; k <= d; k += 2) {
+      let x: number
+      if (k === -d || (k !== d && v[k - 1 + offset] < v[k + 1 + offset])) {
+        x = v[k + 1 + offset]
       } else {
-        diffRange(a, a0, a0 + snake.x, b, b0, b0 + snake.y, equals, out)
-        for (let i = snake.x; i < snake.u; i++) {
-          out.push({ kind: 'keep', text: a[a0 + i] })
-        }
-        diffRange(a, a0 + snake.u, aEnd, b, b0 + snake.v, bEnd, equals, out)
+        x = v[k - 1 + offset] + 1
       }
-      } else {
-        // Large pocket: split on a unique shared line, else greedy align
-        const split = findAnchorSplit(a, a0, aEnd, b, b0, bEnd, equals)
-        if (split) {
-          diffRange(a, a0, split.ai, b, b0, split.bi, equals, out)
-          out.push({ kind: 'keep', text: a[split.ai] })
-          diffRange(a, split.ai + 1, aEnd, b, split.bi + 1, bEnd, equals, out)
-        } else {
-          greedyAlign(a, a0, aEnd, b, b0, bEnd, equals, out)
-        }
+      let y = x - k
+      while (x < n && y < m && equals(a[x], b[y])) {
+        x++
+        y++
       }
-  } else if (n > 0) {
-    for (let i = a0; i < aEnd; i++) out.push({ kind: 'del', text: a[i] })
-  } else if (m > 0) {
-    for (let j = b0; j < bEnd; j++) out.push({ kind: 'ins', text: b[j] })
+      v[k + offset] = x
+      if (x >= n && y >= m) {
+        trace.push(Int32Array.from(v))
+        foundD = d
+        break outer
+      }
+    }
+    trace.push(Int32Array.from(v))
   }
 
-  for (let i = aEnd; i < a1; i++) out.push({ kind: 'keep', text: a[i] })
+  if (foundD < 0) {
+    return [
+      ...a.map((text) => ({ kind: 'del' as const, text })),
+      ...b.map((text) => ({ kind: 'ins' as const, text })),
+    ]
+  }
+
+  const edits: DiffOp[] = []
+  let x = n
+  let y = m
+  for (let d = foundD; d > 0; d--) {
+    const vPrev = trace[d - 1]
+    const k = x - y
+    const prevK =
+      k === -d || (k !== d && vPrev[k - 1 + offset] < vPrev[k + 1 + offset])
+        ? k + 1
+        : k - 1
+    const prevX = vPrev[prevK + offset]
+    const prevY = prevX - prevK
+    while (x > prevX && y > prevY) {
+      x--
+      y--
+      edits.push({ kind: 'keep', text: a[x] })
+    }
+    if (x === prevX) {
+      y--
+      edits.push({ kind: 'ins', text: b[y] })
+    } else {
+      x--
+      edits.push({ kind: 'del', text: a[x] })
+    }
+    x = prevX
+    y = prevY
+  }
+  while (x > 0 && y > 0) {
+    x--
+    y--
+    edits.push({ kind: 'keep', text: a[x] })
+  }
+  while (x > 0) {
+    x--
+    edits.push({ kind: 'del', text: a[x] })
+  }
+  while (y > 0) {
+    y--
+    edits.push({ kind: 'ins', text: b[y] })
+  }
+  edits.reverse()
+  return edits
 }
 
-/** Greedy: for each a-line, keep if equals next b, else del; flush remaining b as ins. */
-function greedyAlign(
-  a: string[],
-  a0: number,
-  a1: number,
-  b: string[],
-  b0: number,
-  b1: number,
-  equals: EqualsFn,
-  out: DiffOp[]
-): void {
-  // Index b lines for multiset matching
-  const unused = new Array(b1 - b0).fill(true)
-  const bAt = (j: number) => b[b0 + j]
+/** Iterative: unique shared lines as anchors, Myers/greedy between them. */
+function largeAlign(a: string[], b: string[], equals: EqualsFn): DiffOp[] {
+  const countA = new Map<string, number>()
+  const countB = new Map<string, number>()
+  for (const L of a) countA.set(L, (countA.get(L) ?? 0) + 1)
+  for (const L of b) countB.set(L, (countB.get(L) ?? 0) + 1)
 
-  for (let i = a0; i < a1; i++) {
+  type Anchor = { ai: number; bi: number }
+  const anchors: Anchor[] = []
+  let biScan = 0
+  for (let ai = 0; ai < a.length; ai++) {
+    const L = a[ai]
+    if ((countA.get(L) ?? 0) !== 1) continue
+    if ((countB.get(L) ?? 0) !== 1) continue
+    let bi = -1
+    for (let j = biScan; j < b.length; j++) {
+      if (equals(b[j], L)) {
+        bi = j
+        break
+      }
+    }
+    if (bi < 0) continue
+    // Keep anchors in increasing order on both sides
+    if (anchors.length && (ai <= anchors[anchors.length - 1].ai || bi <= anchors[anchors.length - 1].bi)) {
+      continue
+    }
+    anchors.push({ ai, bi })
+    biScan = bi + 1
+  }
+
+  const out: DiffOp[] = []
+  let ai = 0
+  let bi = 0
+  for (const an of anchors) {
+    appendOps(out, pocket(a.slice(ai, an.ai), b.slice(bi, an.bi), equals))
+    out.push({ kind: 'keep', text: a[an.ai] })
+    ai = an.ai + 1
+    bi = an.bi + 1
+  }
+  appendOps(out, pocket(a.slice(ai), b.slice(bi), equals))
+  return out
+}
+
+function appendOps(dest: DiffOp[], src: DiffOp[]): void {
+  for (let i = 0; i < src.length; i++) dest.push(src[i])
+}
+
+function pocket(a: string[], b: string[], equals: EqualsFn): DiffOp[] {
+  if (a.length === 0 && b.length === 0) return []
+  if (a.length === 0) return b.map((text) => ({ kind: 'ins' as const, text }))
+  if (b.length === 0) return a.map((text) => ({ kind: 'del' as const, text }))
+  if (a.length + b.length <= MYERS_TRACE_MAX) return myersTrace(a, b, equals)
+  return greedyAlign(a, b, equals)
+}
+
+function greedyAlign(a: string[], b: string[], equals: EqualsFn): DiffOp[] {
+  const unused = new Array(b.length).fill(true)
+  const out: DiffOp[] = []
+  for (let i = 0; i < a.length; i++) {
     let found = -1
-    // Prefer nearby match
-    const prefer = Math.min(i - a0, unused.length - 1)
-    for (const delta of [0, 1, -1, 2, -2]) {
-      const j = prefer + delta
-      if (j >= 0 && j < unused.length && unused[j] && equals(a[i], bAt(j))) {
+    const prefer = Math.min(i, b.length - 1)
+    for (const d of [0, 1, -1, 2, -2, 3, -3]) {
+      const j = prefer + d
+      if (j >= 0 && j < b.length && unused[j] && equals(a[i], b[j])) {
         found = j
         break
       }
     }
     if (found < 0) {
-      for (let j = 0; j < unused.length; j++) {
-        if (unused[j] && equals(a[i], bAt(j))) {
+      for (let j = 0; j < b.length; j++) {
+        if (unused[j] && equals(a[i], b[j])) {
           found = j
           break
         }
@@ -150,131 +262,21 @@ function greedyAlign(
     }
     if (found < 0) {
       out.push({ kind: 'del', text: a[i] })
-    } else {
-      // insert skipped b lines before this match
-      for (let j = 0; j < found; j++) {
-        if (unused[j]) {
-          out.push({ kind: 'ins', text: bAt(j) })
-          unused[j] = false
-        }
-      }
-      out.push({ kind: 'keep', text: a[i] })
-      unused[found] = false
+      continue
     }
-  }
-  for (let j = 0; j < unused.length; j++) {
-    if (unused[j]) out.push({ kind: 'ins', text: bAt(j) })
-  }
-}
-
-function findAnchorSplit(
-  a: string[],
-  a0: number,
-  a1: number,
-  b: string[],
-  b0: number,
-  b1: number,
-  equals: EqualsFn
-): { ai: number; bi: number } | null {
-  const countA = new Map<string, number>()
-  const countB = new Map<string, number>()
-  for (let i = a0; i < a1; i++) {
-    const k = a[i]
-    countA.set(k, (countA.get(k) ?? 0) + 1)
-  }
-  for (let j = b0; j < b1; j++) {
-    const k = b[j]
-    countB.set(k, (countB.get(k) ?? 0) + 1)
-  }
-  // Prefer unique lines in both, near the middle
-  const mid = a0 + Math.floor((a1 - a0) / 2)
-  let best: { ai: number; bi: number; dist: number } | null = null
-  for (let i = a0; i < a1; i++) {
-    const line = a[i]
-    if ((countA.get(line) ?? 0) !== 1) continue
-    if ((countB.get(line) ?? 0) !== 1) continue
-    // find in b
-    let bi = -1
-    for (let j = b0; j < b1; j++) {
-      if (equals(b[j], line)) {
-        bi = j
-        break
+    for (let j = 0; j < found; j++) {
+      if (unused[j]) {
+        out.push({ kind: 'ins', text: b[j] })
+        unused[j] = false
       }
     }
-    if (bi < 0) continue
-    const dist = Math.abs(i - mid)
-    if (!best || dist < best.dist) best = { ai: i, bi, dist }
+    out.push({ kind: 'keep', text: a[i] })
+    unused[found] = false
   }
-  return best ? { ai: best.ai, bi: best.bi } : null
-}
-
-/**
- * Middle snake for a[a0,a1) × b[b0,b1). Only two V buffers (O(N+M) memory).
- */
-function middleSnake(
-  a: string[],
-  a0: number,
-  a1: number,
-  b: string[],
-  b0: number,
-  b1: number,
-  equals: EqualsFn
-): { x: number; y: number; u: number; v: number } {
-  const n = a1 - a0
-  const m = b1 - b0
-  const max = n + m
-  const off = max
-  const vf = new Int32Array(2 * max + 2)
-  const vb = new Int32Array(2 * max + 2)
-  const delta = n - m
-
-  for (let d = 0; d <= Math.ceil(max / 2); d++) {
-    // Forward search
-    for (let k = -d; k <= d; k += 2) {
-      let x =
-        k === -d || (k !== d && vf[k - 1 + off] < vf[k + 1 + off])
-          ? vf[k + 1 + off]
-          : vf[k - 1 + off] + 1
-      let y = x - k
-      const x0 = x
-      const y0 = y
-      while (x < n && y < m && equals(a[a0 + x], b[b0 + y])) {
-        x++
-        y++
-      }
-      vf[k + off] = x
-
-      if (delta % 2 !== 0 && k >= delta - (d - 1) && k <= delta + (d - 1)) {
-        if (x + vb[delta - k + off] >= n) {
-          return { x: x0, y: y0, u: x, v: y }
-        }
-      }
-    }
-
-    // Reverse search
-    for (let k = -d; k <= d; k += 2) {
-      let x =
-        k === -d || (k !== d && vb[k - 1 + off] < vb[k + 1 + off])
-          ? vb[k + 1 + off]
-          : vb[k - 1 + off] + 1
-      let y = x - k
-      const x0 = x
-      const y0 = y
-      while (x < n && y < m && equals(a[a1 - x - 1], b[b1 - y - 1])) {
-        x++
-        y++
-      }
-      vb[k + off] = x
-
-      if (delta % 2 === 0 && k >= delta - d && k <= delta + d) {
-        if (vf[delta - k + off] + x >= n) {
-          return { x: n - x, y: m - y, u: n - x0, v: m - y0 }
-        }
-      }
-    }
+  for (let j = 0; j < b.length; j++) {
+    if (unused[j]) out.push({ kind: 'ins', text: b[j] })
   }
-
-  return { x: 0, y: 0, u: 0, v: 0 }
+  return out
 }
 
 export const myersAlgorithm: Algorithm = {

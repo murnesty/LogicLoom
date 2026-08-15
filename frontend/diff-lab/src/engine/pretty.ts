@@ -13,6 +13,11 @@ export type PrettyXmlOptions = {
    * Default true; no-op for non-OOXML.
    */
   ignoreOoxmlIds?: boolean
+  /**
+   * Keep all attrs on the open-tag line (still sorted). Use for large OOXML so
+   * one-attr-per-line does not explode to 100k+ rows. Default: auto when big.
+   */
+  compactAttrs?: boolean
 }
 
 /** Parse `name="value"` / `name='value'` attrs from the inside of a tag (after element name). */
@@ -55,7 +60,8 @@ export function formatXmlTagLine(
   line: string,
   depth: number,
   sortAttrs = true,
-  stripOoxmlIds = false
+  stripOoxmlIds = false,
+  compactAttrs = false
 ): string[] {
   const indent = '  '.repeat(depth)
   const attrIndent = '  '.repeat(depth + 1)
@@ -81,7 +87,7 @@ export function formatXmlTagLine(
       stripOoxmlIds
     )
     const inner = pairWithAttrs[3]
-    const openLines = expandOpenTag(name, attrs, depth, false)
+    const openLines = expandOpenTag(name, attrs, depth, false, compactAttrs)
     if (!inner) {
       return [...openLines, `${indent}</${name}>`]
     }
@@ -99,14 +105,21 @@ export function formatXmlTagLine(
     sortAttrs,
     stripOoxmlIds
   )
-  return expandOpenTag(name, attrs, depth, selfClose || open[3] === '/')
+  return expandOpenTag(
+    name,
+    attrs,
+    depth,
+    selfClose || open[3] === '/',
+    compactAttrs
+  )
 }
 
 function expandOpenTag(
   name: string,
   attrs: string[],
   depth: number,
-  selfClose: boolean
+  selfClose: boolean,
+  compactAttrs = false
 ): string[] {
   const indent = '  '.repeat(depth)
   const attrIndent = '  '.repeat(depth + 1)
@@ -115,7 +128,16 @@ function expandOpenTag(
     return [`${indent}<${name}${selfClose ? '/>' : '>'}`]
   }
 
-  // Always one attribute per line when any attrs exist
+  if (compactAttrs) {
+    const joined = attrs.join(' ')
+    return [
+      selfClose
+        ? `${indent}<${name} ${joined}/>`
+        : `${indent}<${name} ${joined}>`,
+    ]
+  }
+
+  // One attribute per line when any attrs exist
   const lines = [`${indent}<${name}`]
   for (let i = 0; i < attrs.length; i++) {
     const last = i === attrs.length - 1
@@ -145,6 +167,10 @@ export function prettyXml(text: string, options: PrettyXmlOptions = {}): string 
   // Ensure tag boundaries are line breaks (handles minified OOXML)
   const withBreaks = src.replace(/>\s*</g, '>\n<')
   const rawLines = withBreaks.split(/\r?\n/)
+  const compactAttrs =
+    options.compactAttrs ??
+    (src.length > 350_000 || rawLines.length > 12_000)
+
   let depth = 0
   const out: string[] = []
 
@@ -172,11 +198,10 @@ export function prettyXml(text: string, options: PrettyXmlOptions = {}): string 
 
     const formatted = isDeclOrComment
       ? [`${'  '.repeat(depth)}${line}`]
-      : formatXmlTagLine(line, depth, sortAttrs, stripOoxmlIds)
+      : formatXmlTagLine(line, depth, sortAttrs, stripOoxmlIds, compactAttrs)
     out.push(...formatted)
 
     if (isOpening) depth++
-    // pair-with-attrs expands to open+close; depth unchanged for that line batch
   }
   return out.join('\n')
 }
@@ -207,11 +232,19 @@ export function tryPretty(
       const ignoreOoxmlIds = options.ignoreOoxmlIds !== false
       const ooxml = looksLikeOoxml(text)
       const stripped = ignoreOoxmlIds && ooxml
-      const out = prettyXml(text, { sortAttrs, ignoreOoxmlIds })
+      const tagBreaks = text.replace(/>\s*</g, '>\n<').split(/\r?\n/).length
+      const autoCompact =
+        options.compactAttrs ?? (text.length > 350_000 || tagBreaks > 12_000)
+      const out = prettyXml(text, {
+        sortAttrs,
+        ignoreOoxmlIds,
+        compactAttrs: autoCompact,
+      })
       const after = out.split('\n').length
       const bits: string[] = []
       if (sortAttrs) bits.push('attrs sorted')
       if (stripped) bits.push('OOXML ids ignored')
+      if (autoCompact) bits.push('attrs compact')
       const extra = bits.length ? `; ${bits.join('; ')}` : ''
       return {
         text: out,
