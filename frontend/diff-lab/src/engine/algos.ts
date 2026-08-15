@@ -3,6 +3,13 @@ import { myersSes } from './myers'
 
 const defaultEq: EqualsFn = (x, y) => x === y
 
+/** Soft cap: JS number[][] cells blow RAM (~tens of bytes each). */
+const MAX_DP_CELLS = 4_000_000
+
+function tooBigForDp(n: number, m: number): boolean {
+  return (n + 1) * (m + 1) > MAX_DP_CELLS
+}
+
 function keyFn(equals: EqualsFn): (s: string) => string {
   // Custom equals (e.g. ignore leading WS): canonicalize for LCS/anchors
   if (equals === defaultEq) return (s) => s
@@ -15,9 +22,18 @@ export function lcsSes(
   b: string[],
   equals: EqualsFn = defaultEq
 ): DiffOp[] {
-  const key = keyFn(equals)
   const n = a.length
   const m = b.length
+  if (tooBigForDp(n, m)) {
+    return [
+      {
+        kind: 'hdr',
+        text: `[lcs] ${n}×${m} too large for DP matrix — falling back to Myers`,
+      },
+      ...myersSes(a, b, equals),
+    ]
+  }
+  const key = keyFn(equals)
   const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0))
   for (let i = 1; i <= n; i++) {
     for (let j = 1; j <= m; j++) {
@@ -72,7 +88,8 @@ export function lcsSes(
         }
       }
       const d =
-        cells.reduce((s, c) => s + Math.abs(c.i / n - c.j / m), 0) / Math.max(1, cells.length)
+        cells.reduce((s, c) => s + Math.abs(c.i / n - c.j / m), 0) /
+        Math.max(1, cells.length)
       if (d < bestD) {
         bestD = d
         best = v
@@ -107,6 +124,15 @@ export function levenshteinSes(
 ): DiffOp[] {
   const n = a.length
   const m = b.length
+  if (tooBigForDp(n, m)) {
+    return [
+      {
+        kind: 'hdr',
+        text: `[levenshtein] ${n}×${m} too large for DP matrix — falling back to Myers`,
+      },
+      ...myersSes(a, b, equals),
+    ]
+  }
   const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0))
   const ch: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0))
   // 1=eq 2=del 3=ins 4=sub
