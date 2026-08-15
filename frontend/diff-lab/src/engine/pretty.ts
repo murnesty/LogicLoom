@@ -1,24 +1,78 @@
-import { tryParseJson, tryParseXml } from './flatten'
-
 /** Pretty-print JSON with 2-space indent. Throws if invalid. */
 export function prettyJson(text: string): string {
   return JSON.stringify(JSON.parse(text), null, 2)
 }
 
+/** Parse `name="value"` / `name='value'` attrs from the inside of a tag (after element name). */
+export function parseXmlAttrList(attrBlob: string): string[] {
+  const attrs: string[] = []
+  const re = /([:\w.-]+)\s*=\s*("[^"]*"|'[^']*')/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(attrBlob)) !== null) {
+    attrs.push(`${m[1]}=${m[2]}`)
+  }
+  return attrs
+}
+
 /**
- * Pretty-print XML by breaking between tags and indenting.
- * Keeps namespaces/attrs as-is (no re-serialize). Good for OOXML.
+ * Expand a single tag line into VS Code-like multi-line form when it has many attrs.
+ * Examples:
+ *   <w:document xmlns:a="1" xmlns:b="2">  → broken attrs
+ *   <w:rFonts w:ascii="Calibri" />         → broken attrs
+ */
+export function formatXmlTagLine(line: string, depth: number): string[] {
+  const indent = '  '.repeat(depth)
+  const attrIndent = '  '.repeat(depth + 1)
+
+  if (line.startsWith('</') || line.startsWith('<?') || line.startsWith('<!')) {
+    return [`${indent}${line}`]
+  }
+
+  // <name ...>text</name> kept as one line (common for w:t)
+  if (/^<([A-Za-z_:][\w:.-]*)\b[^>]*>[\s\S]*<\/\1\s*>$/.test(line)) {
+    return [`${indent}${line}`]
+  }
+
+  const selfClose = /\/>$/.test(line)
+  const open = /^<([A-Za-z_:][\w:.-]*)\b([^>]*)(\/?)>$/.exec(line)
+  if (!open) return [`${indent}${line}`]
+
+  const name = open[1]
+  const attrBlob = open[2].trim()
+  const attrs = parseXmlAttrList(attrBlob)
+
+  // Short / single-attr tags stay one line
+  if (attrs.length <= 1 && line.length < 100) {
+    return [`${indent}${line}`]
+  }
+  if (attrs.length === 0) {
+    return [`${indent}${line}`]
+  }
+
+  const lines = [`${indent}<${name}`]
+  for (const a of attrs) {
+    lines.push(`${attrIndent}${a}`)
+  }
+  lines.push(selfClose ? `${indent}/>` : `${indent}>`)
+  return lines
+}
+
+/**
+ * Pretty-print XML: break between tags, indent nest levels, and
+ * put multi-attribute tags on multiple lines (like common editors).
  */
 export function prettyXml(text: string): string {
   const src = text.replace(/^\uFEFF/, '').trim()
   if (!src.startsWith('<')) throw new Error('Not XML')
   const withBreaks = src.replace(/>\s*</g, '>\n<')
-  const lines = withBreaks.split('\n')
+  const rawLines = withBreaks.split('\n')
   let depth = 0
   const out: string[] = []
-  for (const raw of lines) {
+
+  for (const raw of rawLines) {
     const line = raw.trim()
     if (!line) continue
+
     const isClosing = /^<\//.test(line)
     const isDeclOrComment = /^<\?/.test(line) || /^<!/.test(line)
     const isSelfClosing = /\/>$/.test(line)
@@ -29,8 +83,14 @@ export function prettyXml(text: string): string {
       !isSelfClosing &&
       !isDeclOrComment &&
       !isOpenCloseSameLine
+
     if (isClosing) depth = Math.max(0, depth - 1)
-    out.push(`${'  '.repeat(depth)}${line}`)
+
+    const formatted = isDeclOrComment
+      ? [`${'  '.repeat(depth)}${line}`]
+      : formatXmlTagLine(line, depth)
+    out.push(...formatted)
+
     if (isOpening) depth++
   }
   return out.join('\n')
@@ -43,7 +103,6 @@ export function tryPretty(text: string): PrettyResult {
   const t = text.trimStart()
   if (t.startsWith('{') || t.startsWith('[')) {
     try {
-      if (!tryParseJson(text)) throw new Error('invalid json')
       return { text: prettyJson(text), note: 'prettified JSON' }
     } catch {
       return { text, note: 'JSON pretty failed — using raw' }
@@ -51,11 +110,6 @@ export function tryPretty(text: string): PrettyResult {
   }
   if (t.startsWith('<')) {
     try {
-      // Structural check optional; prettyXml only needs tag shape
-      if (!tryParseXml(text) && text.length > 0) {
-        // OOXML often has namespaces our simple parser strips/fails —
-        // still attempt tag-break pretty
-      }
       return { text: prettyXml(text), note: 'prettified XML' }
     } catch {
       return { text, note: 'XML pretty failed — using raw' }

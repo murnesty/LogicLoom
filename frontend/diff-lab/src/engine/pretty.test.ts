@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { prettyXml, prettyJson, tryPretty } from './pretty'
+import { prettyXml, prettyJson, tryPretty, formatXmlTagLine } from './pretty'
 import './presets'
 import { runPreset } from './registry'
 
@@ -14,6 +14,28 @@ describe('prettyXml', () => {
     expect(out).toContain('<w:p>')
     expect(out).toContain('  <w:r>')
     expect(out).toContain('    <w:t>x</w:t>')
+  })
+
+  it('breaks multi-attribute tags onto multiple lines', () => {
+    const out = prettyXml(
+      '<w:document xmlns:w="urn:w" xmlns:r="urn:r" mc:Ignorable="w14"><w:body/></w:document>'
+    )
+    expect(out).toContain('<w:document')
+    expect(out).toContain('  xmlns:w="urn:w"')
+    expect(out).toContain('  xmlns:r="urn:r"')
+    expect(out).toContain('  mc:Ignorable="w14"')
+    expect(out).toMatch(/^>$/m)
+    expect(out).toContain('  <w:body/>')
+  })
+
+  it('breaks fat self-closing attribute tags', () => {
+    const lines = formatXmlTagLine(
+      '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>',
+      1
+    )
+    expect(lines[0]).toBe('  <w:rFonts')
+    expect(lines).toContain('    w:ascii="Calibri"')
+    expect(lines[lines.length - 1]).toBe('  />')
   })
 })
 
