@@ -67,17 +67,20 @@ function InlineTokens({ tokens, side }: { tokens: DiffOp[]; side?: 'left' | 'rig
 export function DiffResult({
   ops,
   layout = 'unified',
+  wrap = false,
 }: {
   ops: DiffOp[]
   layout?: DiffLayout
+  wrap?: boolean
 }) {
   if (ops.length === 0) return <p className="muted">No differences (or empty inputs).</p>
 
   const rows = groupOps(ops)
+  const outClass = `diff-out${layout === 'split' ? ' diff-split' : ''}${wrap ? ' wrap' : ''}`
 
   if (layout === 'split') {
     return (
-      <div className="diff-out diff-split">
+      <div className={outClass}>
         <div className="diff-split-head">
           <div className="diff-pane-label">A (left)</div>
           <div className="diff-pane-label">B (right)</div>
@@ -135,7 +138,7 @@ export function DiffResult({
   }
 
   return (
-    <pre className="diff-out">
+    <pre className={outClass}>
       {rows.map((row, i) => {
         if (row.type === 'single') {
           const op = row.op
