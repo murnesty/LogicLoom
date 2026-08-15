@@ -18,16 +18,40 @@
   box-sizing: border-box;
 }
 
-body {
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
-  min-height: 100vh;
+}
+
+body {
+  overflow: hidden;
 }
 
 .app {
   width: 100%;
   max-width: none;
+  height: 100%;
   margin: 0;
-  padding: 0.75rem 0.75rem 2rem;
+  padding: 0.75rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0.5rem;
+}
+
+.app-chrome {
+  flex: 0 0 auto;
+}
+
+.app.has-diff .app-chrome {
+  flex: 0 1 auto;
+  max-height: min(42vh, 100%);
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 0.15rem;
 }
 
 .eyebrow {
@@ -368,10 +392,12 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  flex: 1 1 0;
   min-height: 0;
 }
 
 .diff-rail-toggles {
+  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
@@ -397,7 +423,8 @@ textarea {
 .diff-workspace-body {
   display: flex;
   align-items: stretch;
-  min-height: 280px;
+  flex: 1 1 0;
+  min-height: 0;
   border-radius: 10px;
   border: 1px solid #2c3a4f;
   overflow: hidden;
@@ -407,14 +434,19 @@ textarea {
 .diff-workspace-main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .diff-workspace-main .diff-scroll {
   border: none;
   border-radius: 0;
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+  overflow: auto;
 }
 
 .diff-rail {
@@ -423,6 +455,8 @@ textarea {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  align-self: stretch;
+  overflow: hidden;
 }
 
 .diff-rail-left {
@@ -431,9 +465,12 @@ textarea {
 
 .diff-rail-right {
   border-left: 1px solid #1e2a3a;
+  /* Map fills height; no rail scrollbar */
+  overflow: hidden;
 }
 
 .diff-rail-head {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -465,7 +502,8 @@ textarea {
   padding: 0.65rem 0.7rem;
   font-size: 0.8rem;
   overflow: auto;
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 .diff-rail-body p {
@@ -489,6 +527,8 @@ textarea {
   gap: 0.55rem;
   padding: 0.55rem 0.6rem !important;
   overflow: hidden;
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 .find-hint {
@@ -623,7 +663,8 @@ textarea {
 /* Minimap */
 .diff-minimap {
   position: relative;
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   margin: 0.35rem 0.4rem 0.5rem;
   border-radius: 6px;
   overflow: hidden;
@@ -631,7 +672,9 @@ textarea {
   background: #0a0e14;
   display: flex;
   flex-direction: column;
-  min-height: 160px;
+  /* Fixed pane — buckets stretch; never scrolls */
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 .minimap-bucket {
@@ -745,7 +788,7 @@ textarea {
 .diff-scroll {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
+  overflow: auto;
   border-radius: 10px;
   border: 1px solid #2c3a4f;
   background: #0c1016;

@@ -180,7 +180,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app${ops ? ' has-diff' : ''}`}>
       {running && (
         <div className="busy-overlay" role="status" aria-live="polite" aria-busy="true">
           <div className="busy-card">
@@ -190,72 +190,75 @@ export default function App() {
           </div>
         </div>
       )}
-      <header>
-        <p className="eyebrow">
-          <a href="../">LogicLoom</a> / Diff Lab
-        </p>
-        <h1>Diff Lab</h1>
-        <p className="lede">
-          Compare text or DOCX internals (document.xml, comments.xml, …) with switchable presets.
-        </p>
-      </header>
+      <div className="app-chrome">
+        <header>
+          <p className="eyebrow">
+            <a href="../">LogicLoom</a> / Diff Lab
+          </p>
+          <h1>Diff Lab</h1>
+          <p className="lede">
+            Compare text or DOCX internals (document.xml, comments.xml, …) with switchable presets.
+          </p>
+        </header>
 
-      <div className="mode-toggle" role="tablist">
-        <button
-          type="button"
-          className={mode === 'files' ? 'active' : ''}
-          onClick={() => setMode('files')}
-        >
-          Files
-        </button>
-        <button
-          type="button"
-          className={mode === 'paste' ? 'active' : ''}
-          onClick={() => setMode('paste')}
-        >
-          Paste text
-        </button>
+        <div className="mode-toggle" role="tablist">
+          <button
+            type="button"
+            className={mode === 'files' ? 'active' : ''}
+            onClick={() => setMode('files')}
+          >
+            Files
+          </button>
+          <button
+            type="button"
+            className={mode === 'paste' ? 'active' : ''}
+            onClick={() => setMode('paste')}
+          >
+            Paste text
+          </button>
+        </div>
+
+        {mode === 'files' ? (
+          <>
+            <FileInputs
+              onA={setFileA}
+              onB={setFileB}
+              nameA={fileA?.name ?? ''}
+              nameB={fileB?.name ?? ''}
+            />
+            {showEntryPicker && (
+              <EntrySelect entries={entries} value={entry} onChange={setEntry} />
+            )}
+          </>
+        ) : (
+          <PasteInputs a={pasteA} b={pasteB} onA={setPasteA} onB={setPasteB} />
+        )}
+
+        <PresetBar
+          detection={detection}
+          preset={preset}
+          onPreset={setPreset}
+          coarse={coarse}
+          onCoarse={setCoarse}
+          fine={fine}
+          onFine={setFine}
+          structure={structure}
+          onStructure={setStructure}
+          layout={layout}
+          onLayout={setLayout}
+          wrap={wrap}
+          onWrap={setWrap}
+          sortAttrs={sortAttrs}
+          onSortAttrs={setSortAttrs}
+          ignoreOoxmlIds={ignoreOoxmlIds}
+          onIgnoreOoxmlIds={setIgnoreOoxmlIds}
+          onRun={() => void onCompare()}
+          running={running}
+        />
+
+        {error && <p className="status-warn">{error}</p>}
       </div>
 
-      {mode === 'files' ? (
-        <>
-          <FileInputs
-            onA={setFileA}
-            onB={setFileB}
-            nameA={fileA?.name ?? ''}
-            nameB={fileB?.name ?? ''}
-          />
-          {showEntryPicker && (
-            <EntrySelect entries={entries} value={entry} onChange={setEntry} />
-          )}
-        </>
-      ) : (
-        <PasteInputs a={pasteA} b={pasteB} onA={setPasteA} onB={setPasteB} />
-      )}
-
-      <PresetBar
-        detection={detection}
-        preset={preset}
-        onPreset={setPreset}
-        coarse={coarse}
-        onCoarse={setCoarse}
-        fine={fine}
-        onFine={setFine}
-        structure={structure}
-        onStructure={setStructure}
-        layout={layout}
-        onLayout={setLayout}
-        wrap={wrap}
-        onWrap={setWrap}
-        sortAttrs={sortAttrs}
-        onSortAttrs={setSortAttrs}
-        ignoreOoxmlIds={ignoreOoxmlIds}
-        onIgnoreOoxmlIds={setIgnoreOoxmlIds}
-        onRun={() => void onCompare()}
-        running={running}
-      />
-
-      {error && <p className="status-warn">{error}</p>}
       {ops && (
         <DiffWorkspace ops={ops} layout={layout} wrap={wrap} />
       )}
