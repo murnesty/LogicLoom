@@ -29,6 +29,7 @@ export {
   assessDiffRisk,
   assessDiffRiskFromOptions,
   formatRiskConfirm,
+  isHeavySes,
   LARGE_INPUT_CHARS,
   type DiffRisk,
   type DiffRiskInput,

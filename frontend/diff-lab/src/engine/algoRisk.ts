@@ -17,7 +17,12 @@ export type DiffRisk = {
   needsConfirm: boolean
 }
 
-const HEAVY_SES = new Set(['lcs', 'levenshtein'])
+/** SES algos that often hang or time out on real OOXML (matrix + browser). */
+const HEAVY_SES = new Set(['lcs', 'patience', 'levenshtein'])
+
+export function isHeavySes(algoId: string): boolean {
+  return HEAVY_SES.has(algoId)
+}
 
 /**
  * UI risk notes + whether Compare should confirm first.
@@ -29,13 +34,13 @@ export function assessDiffRisk(input: DiffRiskInput): DiffRisk {
   const large = size >= LARGE_INPUT_CHARS
   const warnings: string[] = []
 
-  if (HEAVY_SES.has(coarse)) {
+  if (isHeavySes(coarse)) {
     warnings.push(
-      `Coarse “${coarse}” can be very slow or fall back on large docs (high memory).`
+      `Coarse “${coarse}” is often very slow on medium/large docs (may freeze the tab). Prefer Myers.`
     )
   }
   if (
-    HEAVY_SES.has(fine) &&
+    isHeavySes(fine) &&
     (preset === 'text' || preset === 'ignore-ws' || preset === 'structured')
   ) {
     warnings.push(
@@ -60,7 +65,7 @@ export function assessDiffRisk(input: DiffRiskInput): DiffRisk {
     }
   }
 
-  if (large && HEAVY_SES.has(coarse)) {
+  if (large && isHeavySes(coarse)) {
     warnings.push('Large input + heavy SES is likely to be slow or fall back.')
   } else if (
     large &&
@@ -80,12 +85,12 @@ export function assessDiffRisk(input: DiffRiskInput): DiffRisk {
       structure === 'json-patch')
 
   const needsConfirm =
-    HEAVY_SES.has(coarse) ||
-    (HEAVY_SES.has(fine) &&
+    isHeavySes(coarse) ||
+    (isHeavySes(fine) &&
       (preset === 'text' || preset === 'ignore-ws' || preset === 'structured')) ||
     heavyStructure ||
     (large && preset === 'structured') ||
-    (large && HEAVY_SES.has(coarse))
+    (large && isHeavySes(coarse))
 
   // De-dupe while preserving order
   const seen = new Set<string>()

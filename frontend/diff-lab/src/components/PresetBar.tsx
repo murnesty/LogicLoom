@@ -8,6 +8,7 @@ import {
   STRUCTURE_STRATEGY_IDS,
   STRUCTURE_LABELS,
   assessDiffRisk,
+  isHeavySes,
 } from '../engine'
 
 const LABELS: Record<string, string> = {
@@ -18,8 +19,10 @@ const LABELS: Record<string, string> = {
   structured: 'structured',
 }
 
-const algoLabel = (id: string) =>
-  listAlgorithms().find((a) => a.id === id)?.label ?? id
+const algoLabel = (id: string) => {
+  const base = listAlgorithms().find((a) => a.id === id)?.label ?? id
+  return isHeavySes(id) ? `⚠ ${base} (slow)` : base
+}
 
 function Field({
   label,
@@ -175,8 +178,17 @@ export function PresetBar({
             </select>
           </Field>
         )}
-        <Field label="Coarse algo">
-          <select value={coarse} onChange={(e) => onCoarse(e.target.value)}>
+        <Field label={isHeavySes(coarse) ? 'Coarse algo ⚠' : 'Coarse algo'}>
+          <select
+            value={coarse}
+            onChange={(e) => onCoarse(e.target.value)}
+            className={isHeavySes(coarse) ? 'ctrl-select-warn' : undefined}
+            title={
+              isHeavySes(coarse)
+                ? 'LCS / patience / levenshtein often hang on real docs — prefer Myers'
+                : undefined
+            }
+          >
             {COARSE_ALGO_IDS.map((id) => (
               <option key={id} value={id}>
                 {algoLabel(id)}
@@ -184,8 +196,17 @@ export function PresetBar({
             ))}
           </select>
         </Field>
-        <Field label="Fine algo">
-          <select value={fine} onChange={(e) => onFine(e.target.value)}>
+        <Field label={isHeavySes(fine) ? 'Fine algo ⚠' : 'Fine algo'}>
+          <select
+            value={fine}
+            onChange={(e) => onFine(e.target.value)}
+            className={isHeavySes(fine) ? 'ctrl-select-warn' : undefined}
+            title={
+              isHeavySes(fine)
+                ? 'Heavy fine algo can be slow on large changes — prefer Myers'
+                : undefined
+            }
+          >
             {FINE_ALGO_IDS.map((id) => (
               <option key={id} value={id}>
                 {algoLabel(id)}

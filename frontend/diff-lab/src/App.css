@@ -331,6 +331,12 @@ textarea {
   width: 100%;
 }
 
+.ctrl-field select.ctrl-select-warn {
+  border-color: #6b5420;
+  background: rgba(230, 184, 77, 0.1);
+  color: #f0d78c;
+}
+
 .ctrl-section-label {
   font-size: 0.72rem;
   font-weight: 600;

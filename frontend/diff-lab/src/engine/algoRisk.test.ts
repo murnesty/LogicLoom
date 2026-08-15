@@ -28,6 +28,17 @@ describe('assessDiffRisk', () => {
     expect(r.warnings.some((w) => /lcs/i.test(w))).toBe(true)
   })
 
+  it('warns + confirm for coarse patience', () => {
+    const r = assessDiffRisk({
+      preset: 'pretty',
+      coarse: 'patience',
+      fine: 'myers',
+      structure: 'path-key',
+    })
+    expect(r.needsConfirm).toBe(true)
+    expect(r.warnings.some((w) => /patience/i.test(w))).toBe(true)
+  })
+
   it('warns stub ted-pocket', () => {
     const r = assessDiffRisk({
       preset: 'structured',
