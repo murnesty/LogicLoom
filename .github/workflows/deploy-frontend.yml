@@ -61,15 +61,25 @@ jobs:
         working-directory: frontend/diff-lab
         run: npm run build
 
+      - name: Install dependencies (malaysia-stats)
+        working-directory: frontend/malaysia-stats
+        run: npm install
+
+      - name: Build (malaysia-stats)
+        working-directory: frontend/malaysia-stats
+        run: npm run build
+
       # Combine builds into single pages folder
       - name: Prepare Pages
         run: |
           mkdir -p _site/receipt-calculator
           mkdir -p _site/restaurant-finder
           mkdir -p _site/diff-lab
+          mkdir -p _site/malaysia-stats
           cp -r frontend/receipt-calculator/dist/* _site/receipt-calculator/
           cp -r frontend/restaurant-finder/dist/* _site/restaurant-finder/
           cp -r frontend/diff-lab/dist/* _site/diff-lab/
+          cp -r frontend/malaysia-stats/dist/* _site/malaysia-stats/
           cp frontend/index.html _site/index.html
 
       - name: Upload artifact

@@ -10,6 +10,7 @@ A monorepo for multiple hobby projects with ASP.NET Core backends and React Type
 | **Receipt Calculator** | Receipt management and calculations | React + TypeScript | ASP.NET Core |
 | **Places near you** | Malaysia POIs from OpenStreetMap (Overpass) — food, malls, shops | React + TypeScript | — (browser-only) |
 | **Diff Lab** | Text / DOCX zip-entry diff playground with presets | React + TypeScript | — (browser-only) |
+| **Malaysia Stats** | National population by age, sex, and ethnicity from OpenDOSM | React + TypeScript | — (browser-only) |
 
 ## Project Structure
 
@@ -23,7 +24,8 @@ LogicLoom/
 │   ├── history-viewer/            # React app for History Viewer (WIP)
 │   ├── receipt-calculator/        # React app for Receipt Calculator
 │   ├── restaurant-finder/         # Places near you (OSM / Overpass)
-│   └── diff-lab/                  # Diff Lab (DOCX / text presets)
+│   ├── diff-lab/                  # Diff Lab (DOCX / text presets)
+│   └── malaysia-stats/            # Malaysia Stats (OpenDOSM population)
 ├── docs/                          # Documentation
 └── .github/workflows/             # CI/CD pipelines
 ```
@@ -57,6 +59,11 @@ npm run dev
 cd frontend/restaurant-finder
 npm install
 npm run dev
+
+# Malaysia Stats
+cd frontend/malaysia-stats
+npm install
+npm run dev
 ```
 
 ## Deployment
@@ -71,6 +78,7 @@ npm run dev
   - `https://<username>.github.io/LogicLoom/receipt-calculator/`
   - `https://<username>.github.io/LogicLoom/restaurant-finder/`
   - `https://<username>.github.io/LogicLoom/diff-lab/`
+  - `https://<username>.github.io/LogicLoom/malaysia-stats/`
 
 ## Environment Variables
 
