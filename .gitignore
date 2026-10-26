@@ -75,3 +75,7 @@ docs/SampleReceipts/_ocr-tesseract/
 .worktrees/
 .superpowers/sdd/
 
+# DOSM local Excel / CSV dumps (tools/dosm-workbook)
+tools/dosm-workbook/out/
+tools/dosm-workbook/node_modules/
+

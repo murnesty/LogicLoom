@@ -1,0 +1,13 @@
+{
+  "name": "dosm-workbook",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "download": "node download.mjs",
+    "download:all": "node download.mjs --include-state-pop"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
