@@ -16,3 +16,9 @@ export type PopulationRow = {
   ethnicity: string
   population: number
 }
+
+export type BirthRow = {
+  date: string
+  abs: number
+  rate: number
+}

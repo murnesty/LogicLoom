@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import { AgeChart } from './components/AgeChart'
 import { Attribution } from './components/Attribution'
+import { BirthsChart } from './components/BirthsChart'
 import { FilterBar } from './components/FilterBar'
+import { TabBar, type AppTab } from './components/TabBar'
 import { TrendChart } from './components/TrendChart'
+import { runBirthModel, type BirthModelResult } from './birthModel'
 import {
   fetchAgeDistribution,
+  fetchBirthsAnnual,
+  fetchModelAgeBandsByYear,
   fetchPopulationTrend,
   yearsFromTrend,
 } from './dosmClient'
@@ -18,6 +23,7 @@ type TrendState = {
 }
 
 export default function App() {
+  const [tab, setTab] = useState<AppTab>('population')
   const [sex, setSex] = useState<SexCode>('both')
   const [ethnicity, setEthnicity] = useState<EthnicityCode>('overall')
   const [year, setYear] = useState(2024)
@@ -30,6 +36,11 @@ export default function App() {
   const [trendLoading, setTrendLoading] = useState(true)
   const [ageLoading, setAgeLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [birthModel, setBirthModel] = useState<BirthModelResult | null>(null)
+  const [birthsLoading, setBirthsLoading] = useState(false)
+  const [birthsError, setBirthsError] = useState<string | null>(null)
+  const [birthsLoaded, setBirthsLoaded] = useState(false)
 
   const currentKey = `${sex}:${ethnicity}`
   const years = trendState.key === currentKey ? trendState.years : []
@@ -93,28 +104,90 @@ export default function App() {
     }
   }, [year, sex, ethnicity, years])
 
+  useEffect(() => {
+    if (tab !== 'births' || birthsLoaded) return
+    let cancelled = false
+    setBirthsLoading(true)
+    setBirthsError(null)
+    ;(async () => {
+      try {
+        const [birthRows, agePack] = await Promise.all([
+          fetchBirthsAnnual(),
+          fetchModelAgeBandsByYear(),
+        ])
+        if (cancelled) return
+        const result = runBirthModel({
+          births: birthRows.map((r) => ({
+            year: Number(r.date.slice(0, 4)),
+            births: r.abs,
+          })),
+          bandPopByYear: agePack.bandPopByYear,
+          lastPopYear: agePack.lastPopYear,
+        })
+        setBirthModel(result)
+        setBirthsLoaded(true)
+      } catch (e) {
+        if (!cancelled) {
+          setBirthsError(e instanceof Error ? e.message : 'Failed to load births model')
+          setBirthModel(null)
+        }
+      } finally {
+        if (!cancelled) setBirthsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [tab, birthsLoaded])
+
   return (
     <div className="app">
       <h1>Malaysia Stats</h1>
-      <p className="subtitle">National population by age, sex, and ethnicity</p>
+      <p className="subtitle">
+        {tab === 'population'
+          ? 'National population by age, sex, and ethnicity'
+          : 'Actual births vs parent-age illustrative model'}
+      </p>
 
-      <FilterBar
-        year={year}
-        years={years}
-        sex={sex}
-        ethnicity={ethnicity}
-        onYear={setYear}
-        onSex={setSex}
-        onEthnicity={setEthnicity}
-        disabled={loading && years.length === 0}
-      />
+      <TabBar tab={tab} onTab={setTab} />
 
-      {error && <p className="error">{error}</p>}
-      {loading && <p className="status">Loading OpenDOSM data…</p>}
+      {tab === 'population' && (
+        <>
+          <FilterBar
+            year={year}
+            years={years}
+            sex={sex}
+            ethnicity={ethnicity}
+            onYear={setYear}
+            onSex={setSex}
+            onEthnicity={setEthnicity}
+            disabled={loading && years.length === 0}
+          />
 
-      <AgeChart rows={ages} />
-      <TrendChart rows={trend} />
-      <Attribution />
+          {error && <p className="error">{error}</p>}
+          {loading && <p className="status">Loading OpenDOSM data…</p>}
+
+          <AgeChart rows={ages} />
+          <TrendChart rows={trend} />
+          <Attribution />
+        </>
+      )}
+
+      {tab === 'births' && (
+        <>
+          {birthsError && <p className="error">{birthsError}</p>}
+          {birthsLoading && <p className="status">Loading births + parent-age series…</p>}
+          {!birthsLoading && <BirthsChart model={birthModel} />}
+          <Attribution
+            extra={[
+              {
+                href: 'https://open.dosm.gov.my/data-catalogue/births_annual',
+                label: 'Annual Live Births',
+              },
+            ]}
+          />
+        </>
+      )}
     </div>
   )
 }
