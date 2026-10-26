@@ -70,3 +70,8 @@ docs/SampleReceipts/_ocr-tesseract/
 *.log
 *.tmp
 *.temp
+
+# Git worktrees / SDD scratch
+.worktrees/
+.superpowers/sdd/
+
