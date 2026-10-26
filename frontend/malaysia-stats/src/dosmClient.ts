@@ -1,7 +1,7 @@
 import { compareAgeBands } from './ageSort'
 import { MODEL_AGE_BANDS } from './birthModel'
-import { buildBirthsUrl, buildPopulationUrl } from './dosmUrl'
-import type { BirthRow, EthnicityCode, PopulationRow, SexCode } from './types'
+import { buildBirthsUrl, buildMarriagesUrl, buildPopulationUrl } from './dosmUrl'
+import type { BirthRow, EthnicityCode, MarriageRow, PopulationRow, SexCode } from './types'
 import type { BandPopByYear } from './birthModel'
 
 export async function fetchJsonArray<T>(url: string): Promise<T[]> {
@@ -95,4 +95,18 @@ export async function fetchModelAgeBandsByYear(): Promise<{
     }
   }
   return { bandPopByYear, lastPopYear }
+}
+
+/** Marriages are recorded per sex; counts match for couples — use female when sex is both. */
+export async function fetchMarriagesAnnual(
+  sex: SexCode,
+): Promise<MarriageRow[]> {
+  const apiSex = sex === 'both' ? 'female' : sex
+  const url = buildMarriagesUrl({
+    sex: apiSex,
+    dateStart: '1970-01-01',
+    limit: 100,
+  })
+  const rows = await fetchJsonArray<MarriageRow>(url)
+  return rows.slice().sort((a, b) => a.date.localeCompare(b.date))
 }

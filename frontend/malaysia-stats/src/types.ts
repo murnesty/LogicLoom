@@ -22,3 +22,10 @@ export type BirthRow = {
   abs: number
   rate: number
 }
+
+export type MarriageRow = {
+  date: string
+  sex: string
+  abs: number
+  rate: number
+}

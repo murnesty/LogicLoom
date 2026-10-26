@@ -1,6 +1,7 @@
 import { ETHNICITY_OPTIONS, SEX_OPTIONS } from '../labels'
 import type { EthnicityCode, SexCode } from '../types'
 
+/** Kept for the Births lab / legacy year picker if needed. */
 type Props = {
   year: number
   years: number[]

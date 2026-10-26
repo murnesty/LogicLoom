@@ -1,79 +1,79 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { AgeChart } from './components/AgeChart'
 import { Attribution } from './components/Attribution'
 import { BirthsChart } from './components/BirthsChart'
-import { FilterBar } from './components/FilterBar'
+import {
+  DecadeCompareChart,
+  type DecadeComparePoint,
+} from './components/DecadeCompareChart'
+import { DecadeStrip } from './components/DecadeStrip'
+import { GlobalFilters } from './components/GlobalFilters'
 import { TabBar, type AppTab } from './components/TabBar'
-import { TrendChart } from './components/TrendChart'
 import { runBirthModel, type BirthModelResult } from './birthModel'
+import {
+  DECADES,
+  decadeOfYear,
+  pickDecadeSnapshotYear,
+  yearsInDecade,
+} from './decades'
 import {
   fetchAgeDistribution,
   fetchBirthsAnnual,
+  fetchMarriagesAnnual,
   fetchModelAgeBandsByYear,
   fetchPopulationTrend,
   yearsFromTrend,
 } from './dosmClient'
-import type { EthnicityCode, PopulationRow, SexCode } from './types'
-
-type TrendState = {
-  key: string
-  rows: PopulationRow[]
-  years: number[]
-}
+import type { EthnicityCode, MarriageRow, PopulationRow, SexCode } from './types'
 
 export default function App() {
-  const [tab, setTab] = useState<AppTab>('population')
+  const [tab, setTab] = useState<AppTab>('decades')
   const [sex, setSex] = useState<SexCode>('both')
   const [ethnicity, setEthnicity] = useState<EthnicityCode>('overall')
-  const [year, setYear] = useState(2024)
-  const [trendState, setTrendState] = useState<TrendState>({
-    key: '',
-    rows: [],
-    years: [],
-  })
+  const [decadeStart, setDecadeStart] = useState(2010)
+
+  const [popYears, setPopYears] = useState<number[]>([])
   const [ages, setAges] = useState<PopulationRow[]>([])
-  const [trendLoading, setTrendLoading] = useState(true)
+  const [snapshotYear, setSnapshotYear] = useState<number | null>(null)
+  const [popLoading, setPopLoading] = useState(true)
   const [ageLoading, setAgeLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [popError, setPopError] = useState<string | null>(null)
 
   const [birthModel, setBirthModel] = useState<BirthModelResult | null>(null)
-  const [birthsLoading, setBirthsLoading] = useState(false)
-  const [birthsError, setBirthsError] = useState<string | null>(null)
-  const [birthsLoaded, setBirthsLoaded] = useState(false)
+  const [marriages, setMarriages] = useState<MarriageRow[]>([])
+  const [seriesLoading, setSeriesLoading] = useState(true)
+  const [seriesError, setSeriesError] = useState<string | null>(null)
 
-  const currentKey = `${sex}:${ethnicity}`
-  const years = trendState.key === currentKey ? trendState.years : []
-  const trend = trendState.key === currentKey ? trendState.rows : []
-  const loading = trendLoading || ageLoading
+  const availableDecadeStarts = useMemo(() => {
+    const set = new Set<number>()
+    for (const y of popYears) set.add(decadeOfYear(y))
+    return set
+  }, [popYears])
 
+  // Population years for decade availability (respects sex/ethnicity).
   useEffect(() => {
     let cancelled = false
-    const key = `${sex}:${ethnicity}`
-    setTrendLoading(true)
-    setError(null)
+    setPopLoading(true)
+    setPopError(null)
     ;(async () => {
       try {
-        const trendRows = await fetchPopulationTrend(sex, ethnicity)
+        const trend = await fetchPopulationTrend(sex, ethnicity)
         if (cancelled) return
-        const ys = yearsFromTrend(trendRows)
-        if (ys.length > 0) {
-          setAgeLoading(true)
-          setYear((prev) => (ys.includes(prev) ? prev : ys[ys.length - 1]))
-        } else {
-          setAgeLoading(false)
-          setAges([])
-        }
-        setTrendState({ key, rows: trendRows, years: ys })
+        const ys = yearsFromTrend(trend)
+        setPopYears(ys)
+        setDecadeStart((prev) => {
+          if (ys.some((y) => decadeOfYear(y) === prev)) return prev
+          const last = ys[ys.length - 1]
+          return last != null ? decadeOfYear(last) : prev
+        })
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Failed to load data')
-          setTrendState({ key, rows: [], years: [] })
-          setAges([])
-          setAgeLoading(false)
+          setPopError(e instanceof Error ? e.message : 'Failed to load population years')
+          setPopYears([])
         }
       } finally {
-        if (!cancelled) setTrendLoading(false)
+        if (!cancelled) setPopLoading(false)
       }
     })()
     return () => {
@@ -81,18 +81,24 @@ export default function App() {
     }
   }, [sex, ethnicity])
 
+  // Age pyramid for selected decade end (or latest in-decade year).
   useEffect(() => {
-    if (years.length === 0 || !years.includes(year)) return
+    const snap = pickDecadeSnapshotYear(decadeStart, popYears)
+    setSnapshotYear(snap)
+    if (snap == null) {
+      setAges([])
+      return
+    }
     let cancelled = false
     setAgeLoading(true)
-    setError(null)
+    setPopError(null)
     ;(async () => {
       try {
-        const ageRows = await fetchAgeDistribution(sex, ethnicity, year)
-        if (!cancelled) setAges(ageRows)
+        const rows = await fetchAgeDistribution(sex, ethnicity, snap)
+        if (!cancelled) setAges(rows)
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Failed to load age data')
+          setPopError(e instanceof Error ? e.message : 'Failed to load age distribution')
           setAges([])
         }
       } finally {
@@ -102,21 +108,22 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [year, sex, ethnicity, years])
+  }, [decadeStart, popYears, sex, ethnicity])
 
+  // Birth model (national both/overall) + marriages (sex-aware) — shared by Decades + Births lab.
   useEffect(() => {
-    if (tab !== 'births' || birthsLoaded) return
     let cancelled = false
-    setBirthsLoading(true)
-    setBirthsError(null)
+    setSeriesLoading(true)
+    setSeriesError(null)
     ;(async () => {
       try {
-        const [birthRows, agePack] = await Promise.all([
+        const [birthRows, agePack, marriageRows] = await Promise.all([
           fetchBirthsAnnual(),
           fetchModelAgeBandsByYear(),
+          fetchMarriagesAnnual(sex),
         ])
         if (cancelled) return
-        const result = runBirthModel({
+        const model = runBirthModel({
           births: birthRows.map((r) => ({
             year: Number(r.date.slice(0, 4)),
             births: r.abs,
@@ -124,70 +131,131 @@ export default function App() {
           bandPopByYear: agePack.bandPopByYear,
           lastPopYear: agePack.lastPopYear,
         })
-        setBirthModel(result)
-        setBirthsLoaded(true)
+        setBirthModel(model)
+        setMarriages(marriageRows)
       } catch (e) {
         if (!cancelled) {
-          setBirthsError(e instanceof Error ? e.message : 'Failed to load births model')
+          setSeriesError(e instanceof Error ? e.message : 'Failed to load births/marriages')
           setBirthModel(null)
+          setMarriages([])
         }
       } finally {
-        if (!cancelled) setBirthsLoading(false)
+        if (!cancelled) setSeriesLoading(false)
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [tab, birthsLoaded])
+  }, [sex])
+
+  const decadeLabel =
+    DECADES.find((d) => d.start === decadeStart)?.label ?? `${decadeStart}s`
+
+  const decadePoints: DecadeComparePoint[] = useMemo(() => {
+    const years = yearsInDecade(decadeStart)
+    const modelByYear = new Map(
+      (birthModel?.series ?? []).map((p) => [p.year, p] as const),
+    )
+    const marriageByYear = new Map(
+      marriages.map((m) => [Number(m.date.slice(0, 4)), m] as const),
+    )
+    return years.map((year) => {
+      const m = modelByYear.get(year)
+      const mar = marriageByYear.get(year)
+      return {
+        year,
+        actualBirths: m?.actual ?? null,
+        modelBirths: m?.model ?? null,
+        marriages: mar?.abs ?? null,
+        marriageRate: mar?.rate ?? null,
+      }
+    })
+  }, [decadeStart, birthModel, marriages])
+
+  const loading = popLoading || ageLoading || seriesLoading
 
   return (
     <div className="app">
       <h1>Malaysia Stats</h1>
       <p className="subtitle">
-        {tab === 'population'
-          ? 'National population by age, sex, and ethnicity'
-          : 'Actual births vs parent-age illustrative model'}
+        Pick a decade of actual data — age structure, births vs model, and marriages —
+        to see what feeds (and breaks) a simple forecast.
       </p>
+
+      <GlobalFilters
+        sex={sex}
+        ethnicity={ethnicity}
+        onSex={setSex}
+        onEthnicity={setEthnicity}
+        disabled={popLoading && popYears.length === 0}
+      />
 
       <TabBar tab={tab} onTab={setTab} />
 
-      {tab === 'population' && (
+      {popError && <p className="error">{popError}</p>}
+      {seriesError && <p className="error">{seriesError}</p>}
+      {loading && <p className="status">Loading OpenDOSM data…</p>}
+
+      {tab === 'decades' && (
         <>
-          <FilterBar
-            year={year}
-            years={years}
-            sex={sex}
-            ethnicity={ethnicity}
-            onYear={setYear}
-            onSex={setSex}
-            onEthnicity={setEthnicity}
-            disabled={loading && years.length === 0}
+          <DecadeStrip
+            selected={decadeStart}
+            availableStarts={availableDecadeStarts}
+            onSelect={setDecadeStart}
           />
 
-          {error && <p className="error">{error}</p>}
-          {loading && <p className="status">Loading OpenDOSM data…</p>}
+          <p className="decade-meta">
+            {snapshotYear != null ? (
+              <>
+                Age snapshot: <strong>{snapshotYear}</strong> (end of decade, or latest
+                year available in {decadeLabel}). Sex/ethnicity filters apply to the age
+                chart. Births are national totals; marriage series follows Sex (Both uses
+                female registration counts). Birth model still uses both sexes / overall
+                ethnicity.
+              </>
+            ) : (
+              <>No population years in {decadeLabel} for this filter.</>
+            )}
+          </p>
 
-          <AgeChart rows={ages} />
-          <TrendChart rows={trend} />
-          <Attribution />
+          {ethnicity !== 'overall' && (
+            <p className="callout">
+              Ethnicity filter does not apply to national births or marriages APIs —
+              only the age pyramid changes.
+            </p>
+          )}
+
+          <AgeChart
+            rows={ages}
+            title={`Age distribution · ${snapshotYear ?? '—'}`}
+            highlightParentAge
+          />
+          <DecadeCompareChart points={decadePoints} decadeLabel={decadeLabel} />
         </>
       )}
 
       {tab === 'births' && (
         <>
-          {birthsError && <p className="error">{birthsError}</p>}
-          {birthsLoading && <p className="status">Loading births + parent-age series…</p>}
-          {!birthsLoading && <BirthsChart model={birthModel} />}
-          <Attribution
-            extra={[
-              {
-                href: 'https://open.dosm.gov.my/data-catalogue/births_annual',
-                label: 'Annual Live Births',
-              },
-            ]}
-          />
+          <p className="chart-note" style={{ marginBottom: '1rem' }}>
+            Full actual-vs-model series (parent-age rate trained 2000–2015). Decades tab
+            is better for explaining one period at a time.
+          </p>
+          {!seriesLoading && <BirthsChart model={birthModel} />}
         </>
       )}
+
+      <Attribution
+        extra={[
+          {
+            href: 'https://open.dosm.gov.my/data-catalogue/births_annual',
+            label: 'Annual Live Births',
+          },
+          {
+            href: 'https://open.dosm.gov.my/data-catalogue/marriages',
+            label: 'Annual Marriages',
+          },
+        ]}
+      />
     </div>
   )
 }

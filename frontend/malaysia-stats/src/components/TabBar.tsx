@@ -1,4 +1,4 @@
-export type AppTab = 'population' | 'births'
+export type AppTab = 'decades' | 'births'
 
 type Props = {
   tab: AppTab
@@ -11,11 +11,11 @@ export function TabBar({ tab, onTab }: Props) {
       <button
         type="button"
         role="tab"
-        aria-selected={tab === 'population'}
-        className={tab === 'population' ? 'tab active' : 'tab'}
-        onClick={() => onTab('population')}
+        aria-selected={tab === 'decades'}
+        className={tab === 'decades' ? 'tab active' : 'tab'}
+        onClick={() => onTab('decades')}
       >
-        Population
+        Decades
       </button>
       <button
         type="button"
@@ -24,7 +24,7 @@ export function TabBar({ tab, onTab }: Props) {
         className={tab === 'births' ? 'tab active' : 'tab'}
         onClick={() => onTab('births')}
       >
-        Births model
+        Births lab
       </button>
     </div>
   )
