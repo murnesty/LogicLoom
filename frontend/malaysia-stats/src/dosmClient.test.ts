@@ -60,6 +60,23 @@ describe('fetchAgeDistribution', () => {
   })
 })
 
+describe('fetchPopulationTrend', () => {
+  it('sorts trend rows by date ascending', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
+          { date: '2020-01-01', sex: 'both', age: 'overall', ethnicity: 'overall', population: 2 },
+          { date: '2019-01-01', sex: 'both', age: 'overall', ethnicity: 'overall', population: 1 },
+        ],
+      }),
+    )
+    const rows = await fetchPopulationTrend('both', 'overall')
+    expect(rows.map((r) => r.date)).toEqual(['2019-01-01', '2020-01-01'])
+  })
+})
+
 describe('yearsFromTrend', () => {
   it('extracts ascending unique years', () => {
     expect(
